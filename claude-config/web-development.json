@@ -1,0 +1,126 @@
+{
+  "mcp": {
+    "mcpServers": {
+      "filesystem": {
+        "type": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-filesystem",
+          "/home/ubuntu/projects",
+          "/home/ubuntu/shared"
+        ]
+      },
+      
+      "github": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-github"],
+        "env": {
+          "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+        }
+      },
+      
+      "postgres": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-postgres"],
+        "env": {
+          "POSTGRES_CONNECTION_STRING": "${DATABASE_URL}"
+        }
+      },
+      
+      "puppeteer": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+        "env": {
+          "PUPPETEER_HEADLESS": "true",
+          "PUPPETEER_NO_SANDBOX": "true"
+        }
+      }
+    }
+  },
+  
+  "permissions": {
+    "permissions": {
+      "allow": [
+        "Edit",
+        "Read",
+        "WebFetch",
+        "WebSearch",
+        
+        "Bash(git:*)",
+        "Bash(gh:*)",
+        
+        "Bash(npm:*)",
+        "Bash(npx:*)",
+        "Bash(yarn:*)",
+        "Bash(pnpm:*)",
+        "Bash(node:*)",
+        
+        "Bash(next:*)",
+        "Bash(vite:*)",
+        "Bash(webpack:*)",
+        "Bash(create-react-app:*)",
+        "Bash(vue:*)",
+        "Bash(ng:*)",
+        
+        "Bash(curl:*)",
+        "Bash(wget:*)",
+        "Bash(jq:*)",
+        
+        "Bash(jest:*)",
+        "Bash(vitest:*)",
+        "Bash(cypress:*)",
+        "Bash(playwright:*)",
+        
+        "Bash(eslint:*)",
+        "Bash(prettier:*)",
+        "Bash(tsc:*)",
+        "Bash(sass:*)",
+        "Bash(tailwindcss:*)",
+        
+        "Bash(pm2:*)",
+        "Bash(nodemon:*)",
+        "Bash(serve:*)",
+        
+        "Bash(ls:*)",
+        "Bash(cat:*)",
+        "Bash(grep:*)",
+        "Bash(find:*)",
+        "Bash(ps:*)",
+        "Bash(netstat:*)"
+      ],
+      "deny": [
+        "Bash(rm -rf /*)",
+        "Bash(sudo rm:*)",
+        "Bash(chmod 777:*)"
+      ]
+    },
+    "theme": "dark",
+    "notifications": {
+      "enabled": true
+    }
+  },
+  
+  "environment": {
+    "NODE_ENV": "development",
+    "PORT": "3000",
+    "VITE_PORT": "5173",
+    "NEXT_PUBLIC_API_URL": "http://localhost:3001"
+  },
+  
+  "customCommands": [
+    {
+      "name": "create-component",
+      "description": "Create a new React/Vue/Angular component",
+      "content": "Create new component: $ARGUMENTS\n\n1. Analyze existing component patterns\n2. Create component file with proper structure\n3. Add TypeScript interfaces if needed\n4. Create test file\n5. Add to index exports\n6. Update documentation"
+    },
+    {
+      "name": "setup-project",
+      "description": "Setup new web project",
+      "content": "Setup new web project: $ARGUMENTS\n\n1. Initialize package.json\n2. Install framework and dependencies\n3. Setup TypeScript/JavaScript configuration\n4. Configure build tools (Vite/Webpack)\n5. Setup linting and formatting\n6. Create folder structure\n7. Add git hooks\n8. Create README"
+    }
+  ]
+}

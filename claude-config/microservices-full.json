@@ -1,0 +1,201 @@
+{
+  "mcp": {
+    "mcpServers": {
+      "filesystem": {
+        "type": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-filesystem",
+          "/home/ubuntu/workspace",
+          "/home/ubuntu/projects"
+        ]
+      },
+      "firecrawl-mcp": {
+        "type": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "firecrawl-mcp"
+        ],
+        "env": {
+          "FIRECRAWL_API_URL": "http://localhost:3002",
+          "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}",
+          "FIRECRAWL_RETRY_MAX_ATTEMPTS": "5",
+          "FIRECRAWL_RETRY_INITIAL_DELAY": "2000",
+          "FIRECRAWL_RETRY_MAX_DELAY": "30000",
+          "FIRECRAWL_RETRY_BACKOFF_FACTOR": "3"
+        }
+      },
+      "github": {
+        "type": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-github"
+        ],
+        "env": {
+          "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+        }
+      },
+      "postgres": {
+        "type": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-postgres"
+        ],
+        "env": {
+          "POSTGRES_CONNECTION_STRING": "${DATABASE_URL}"
+        }
+      },
+      "redis": {
+        "type": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-redis"
+        ],
+        "env": {
+          "REDIS_URL": "${REDIS_URL}"
+        }
+      },
+      "docker": {
+        "type": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-docker"
+        ]
+      },
+      "kubernetes": {
+        "type": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-kubernetes"
+        ],
+        "env": {
+          "KUBECONFIG": "/home/ubuntu/.kube/config"
+        }
+      },
+      "puppeteer": {
+        "type": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-puppeteer"
+        ],
+        "env": {
+          "PUPPETEER_HEADLESS": "true",
+          "PUPPETEER_NO_SANDBOX": "true",
+          "PUPPETEER_DISABLE_DEV_SHM_USAGE": "true"
+        }
+      }
+    }
+  },
+  "permissions": {
+    "permissions": {
+      "allow": [
+        "Edit",
+        "Read",
+        "WebFetch",
+        "WebSearch",
+        "Bash(git:*)",
+        "Bash(gh:*)",
+        "Bash(npm:*)",
+        "Bash(npx:*)",
+        "Bash(yarn:*)",
+        "Bash(pnpm:*)",
+        "Bash(node:*)",
+        "Bash(nvm:*)",
+        "Bash(next:*)",
+        "Bash(vite:*)",
+        "Bash(webpack:*)",
+        "Bash(turbo:*)",
+        "Bash(lerna:*)",
+        "Bash(nx:*)",
+        "Bash(docker:*)",
+        "Bash(docker-compose:*)",
+        "Bash(podman:*)",
+        "Bash(kubectl:*)",
+        "Bash(helm:*)",
+        "Bash(k9s:*)",
+        "Bash(skaffold:*)",
+        "Bash(curl:*)",
+        "Bash(wget:*)",
+        "Bash(jq:*)",
+        "Bash(newman:*)",
+        "Bash(jest:*)",
+        "Bash(cypress:*)",
+        "Bash(playwright:*)",
+        "Bash(k6:*)",
+        "Bash(istioctl:*)",
+        "Bash(linkerd:*)",
+        "Bash(consul:*)",
+        "Bash(prometheus:*)",
+        "Bash(grafana-cli:*)",
+        "Bash(jaeger:*)",
+        "Bash(terraform:*)",
+        "Bash(pulumi:*)",
+        "Bash(psql:*)",
+        "Bash(mysql:*)",
+        "Bash(redis-cli:*)",
+        "Bash(mongo:*)",
+        "Bash(prisma:*)",
+        "Bash(eslint:*)",
+        "Bash(prettier:*)",
+        "Bash(tsc:*)",
+        "Bash(pm2:*)",
+        "Bash(nodemon:*)",
+        "Bash(ls:*)",
+        "Bash(cat:*)",
+        "Bash(grep:*)",
+        "Bash(find:*)",
+        "Bash(tail:*)",
+        "Bash(head:*)",
+        "Bash(less:*)",
+        "Bash(tree:*)",
+        "Bash(htop:*)",
+        "Bash(ps:*)",
+        "Bash(df:*)",
+        "Bash(du:*)",
+        "Bash(free:*)",
+        "Bash(netstat:*)",
+        "Bash(ss:*)",
+        "Bash(ping:*)"
+      ],
+      "deny": [
+        "Bash(rm -rf /*)",
+        "Bash(sudo rm:*)",
+        "Bash(chmod 777:*)",
+        "Bash(chown root:*)"
+      ]
+    },
+    "theme": "dark",
+    "notifications": {
+      "enabled": true
+    },
+    "enableArchitectTool": true
+  },
+  "environment": {
+    "NODE_ENV": "development",
+    "DOCKER_BUILDKIT": "1",
+    "COMPOSE_DOCKER_CLI_BUILD": "1",
+    "DEBUG": "microservices:*",
+    "LOG_LEVEL": "debug",
+    "PORT": "3000"
+  },
+  "customCommands": [
+    {
+      "name": "microservice-deploy",
+      "description": "Deploy microservice to Kubernetes",
+      "content": "Deploy microservice to Kubernetes: $ARGUMENTS\n\nFollow these steps:\n1. Validate the service configuration and dependencies\n2. Build the Docker image with proper tagging\n3. Push the image to the container registry\n4. Update Kubernetes manifests with new image version\n5. Apply the deployment using kubectl\n6. Verify the deployment status and health checks\n7. Update service mesh configuration if needed\n8. Run smoke tests to ensure the service is working"
+    },
+    {
+      "name": "service-health-check",
+      "description": "Perform comprehensive health check for microservice",
+      "content": "Perform comprehensive health check for microservice: $ARGUMENTS\n\nSteps to execute:\n1. Check service status in Kubernetes cluster\n2. Verify database connections and migrations\n3. Test API endpoints with curl/httpie\n4. Check service logs for errors\n5. Validate service mesh routing\n6. Monitor resource usage (CPU, memory)\n7. Test inter-service communication\n8. Verify circuit breaker and retry mechanisms"
+    }
+  ]
+}

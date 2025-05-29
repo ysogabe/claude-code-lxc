@@ -1,0 +1,30 @@
+config:
+  limits.cpu: "4"
+  limits.memory: 16GB
+  limits.memory.swap: "false"
+  security.nesting: "true"
+  user.user-data: "#cloud-config\npackage_update: false\npackage_upgrade: false\npackages:\n
+    \ # 基本開発ツール\n  - curl\n  - wget\n  - git\n  - vim\n  - nano\n  - htop\n  - tree\n
+    \ - jq\n  - unzip\n  - zip\n  - build-essential\n  - software-properties-common\n
+    \ \n  # mDNS対応\n  - avahi-daemon\n  - libnss-mdns\n  \n  # SSH/リモート接続\n  - openssh-server\n
+    \ - openssh-client\n  \n  # Python開発環境\n  - python3\n  - python3-pip\n  - python3-venv\n
+    \ - python3-dev\n  \n  # Rust開発環境 (事前パッケージ)\n  - rustc\n  - cargo\n  \n  # システム管理\n
+    \ - sudo\n  - systemd\n  \n  # Docker (オプション)\n  - docker.io\n  - docker-compose\n
+    \ \nruncmd:\n  # 基本サービス設定\n  - systemctl enable ssh avahi-daemon docker\n  - systemctl
+    start ssh avahi-daemon docker\n  - mkdir -p /home/ubuntu/.ssh\n  - chmod 700 /home/ubuntu/.ssh\n
+    \ - chown ubuntu:ubuntu /home/ubuntu/.ssh\n  - echo \"ubuntu ALL=(ALL) NOPASSWD:ALL\"
+    >> /etc/sudoers.d/ubuntu\n  - usermod -aG docker ubuntu\n  \n"
+description: Claude Code development environment with SSH access
+devices:
+  eth0:
+    name: eth0
+    network: lxdbr0
+    type: nic
+  root:
+    path: /
+    pool: default
+    size: 80GB
+    type: disk
+name: claude-code-dev
+used_by:
+- /1.0/instances/claude-code-container

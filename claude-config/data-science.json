@@ -1,0 +1,119 @@
+{
+  "mcp": {
+    "mcpServers": {
+      "filesystem": {
+        "type": "stdio",
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-filesystem",
+          "/home/ubuntu/notebooks",
+          "/home/ubuntu/datasets",
+          "/home/ubuntu/models"
+        ]
+      },
+      
+      "postgres": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-postgres"],
+        "env": {
+          "POSTGRES_CONNECTION_STRING": "${DATABASE_URL}"
+        }
+      },
+      
+      "github": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-github"],
+        "env": {
+          "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+        }
+      }
+    }
+  },
+  
+  "permissions": {
+    "permissions": {
+      "allow": [
+        "Edit",
+        "Read",
+        "WebFetch",
+        "WebSearch",
+        
+        "Bash(git:*)",
+        "Bash(gh:*)",
+        
+        "Bash(python:*)",
+        "Bash(python3:*)",
+        "Bash(pip:*)",
+        "Bash(pip3:*)",
+        "Bash(conda:*)",
+        "Bash(jupyter:*)",
+        "Bash(ipython:*)",
+        
+        "Bash(R:*)",
+        "Bash(Rscript:*)",
+        
+        "Bash(julia:*)",
+        
+        "Bash(psql:*)",
+        "Bash(mysql:*)",
+        "Bash(sqlite3:*)",
+        
+        "Bash(curl:*)",
+        "Bash(wget:*)",
+        "Bash(jq:*)",
+        
+        "Bash(ls:*)",
+        "Bash(cat:*)",
+        "Bash(grep:*)",
+        "Bash(find:*)",
+        "Bash(head:*)",
+        "Bash(tail:*)",
+        "Bash(wc:*)",
+        "Bash(sort:*)",
+        "Bash(uniq:*)",
+        "Bash(awk:*)",
+        "Bash(sed:*)",
+        
+        "Bash(htop:*)",
+        "Bash(nvidia-smi:*)",
+        "Bash(free:*)",
+        "Bash(df:*)"
+      ],
+      "deny": [
+        "Bash(rm -rf /*)",
+        "Bash(sudo rm:*)"
+      ]
+    },
+    "theme": "dark",
+    "notifications": {
+      "enabled": true
+    }
+  },
+  
+  "environment": {
+    "PYTHONPATH": "/home/ubuntu/notebooks:/home/ubuntu/modules",
+    "JUPYTER_CONFIG_DIR": "/home/ubuntu/.jupyter",
+    "CUDA_VISIBLE_DEVICES": "0"
+  },
+  
+  "customCommands": [
+    {
+      "name": "create-notebook",
+      "description": "Create a new Jupyter notebook with template",
+      "content": "Create new notebook: $ARGUMENTS\n\n1. Create notebook with standard imports\n2. Add data loading cells\n3. Add visualization setup\n4. Create markdown documentation\n5. Add model training template\n6. Setup experiment tracking"
+    },
+    {
+      "name": "run-experiment",
+      "description": "Run ML experiment with tracking",
+      "content": "Run ML experiment: $ARGUMENTS\n\n1. Load and preprocess data\n2. Split into train/test sets\n3. Train model with cross-validation\n4. Log metrics and parameters\n5. Generate visualizations\n6. Save model and results\n7. Update experiment log"
+    },
+    {
+      "name": "analyze-dataset",
+      "description": "Perform EDA on dataset",
+      "content": "Analyze dataset: $ARGUMENTS\n\n1. Load dataset\n2. Check data types and missing values\n3. Generate summary statistics\n4. Create distribution plots\n5. Check correlations\n6. Identify outliers\n7. Generate EDA report"
+    }
+  ]
+}

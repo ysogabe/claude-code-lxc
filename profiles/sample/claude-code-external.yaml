@@ -1,0 +1,121 @@
+config:
+  limits.cpu: "4"
+  limits.memory: 16GB
+  limits.memory.swap: "false"
+  security.nesting: "true"
+  user.user-data: |
+    #cloud-config
+    package_update: false
+    package_upgrade: false
+    packages:
+      # 基本開発ツール
+      - curl
+      - wget
+      - git
+      - vim
+      - nano
+      - htop
+      - tree
+      - jq
+      - unzip
+      - zip
+      - build-essential
+      - software-properties-common
+      
+      # mDNS対応
+      - avahi-daemon
+      - libnss-mdns
+      
+      # SSH/リモート接続
+      - openssh-server
+      - openssh-client
+      
+      # Python開発環境
+      - python3
+      - python3-pip
+      - python3-venv
+      - python3-dev
+      
+      # Rust開発環境
+      - rustc
+      - cargo
+      
+      # システム管理
+      - sudo
+      - systemd
+      
+      # Docker
+      - docker.io
+      - docker-compose
+      
+      # セキュリティツール
+      - fail2ban
+      - ufw
+      
+    runcmd:
+      # 基本サービス設定
+      - systemctl enable ssh avahi-daemon docker fail2ban
+      - systemctl start ssh avahi-daemon docker
+      
+      # claude_codeユーザーの作成
+      - useradd -m -s /bin/bash claude_code
+      - usermod -aG sudo claude_code
+      - echo "claude_code ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/claude_code
+      - mkdir -p /home/claude_code/.ssh
+      - chmod 700 /home/claude_code/.ssh
+      - chown claude_code:claude_code /home/claude_code/.ssh
+      - usermod -aG docker claude_code
+      
+      # SSH強化設定
+      - |
+        cat >> /etc/ssh/sshd_config << 'EOF'
+        # External Access Security Configuration
+        Protocol 2
+        PermitRootLogin no
+        PubkeyAuthentication yes
+        PasswordAuthentication yes
+        MaxAuthTries 3
+        MaxSessions 2
+        ClientAliveInterval 300
+        ClientAliveCountMax 2
+        PermitEmptyPasswords no
+        X11Forwarding yes
+        AllowUsers claude_code
+        EOF
+      
+      # fail2ban SSH設定
+      - |
+        cat > /etc/fail2ban/jail.local << 'EOF'
+        [sshd]
+        enabled = true
+        port = ssh
+        filter = sshd
+        logpath = /var/log/auth.log
+        maxretry = 3
+        bantime = 3600
+        findtime = 600
+        EOF
+      
+      # UFWファイアウォール設定
+      - ufw --force enable
+      - ufw default deny incoming
+      - ufw default allow outgoing
+      - ufw allow ssh
+      - ufw allow from 10.119.132.0/24
+      
+      # fail2ban開始
+      - systemctl start fail2ban
+      
+description: Claude Code development environment for external SSH access
+devices:
+  eth0:
+    name: eth0
+    nictype: bridged
+    parent: bond0
+    type: nic
+  root:
+    path: /
+    pool: default
+    size: 80GB
+    type: disk
+name: claude-code-external

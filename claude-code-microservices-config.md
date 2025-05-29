@@ -166,9 +166,7 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "/home/ubuntu/microservices",
-        "/home/ubuntu/docker-configs",
-        "/home/ubuntu/k8s-manifests"
+        "/home/claude/workspace/projects"
       ]
     },
     
@@ -177,7 +175,7 @@
       "command": "npx",
       "args": ["-y", "firecrawl-mcp"],
       "env": {
-        "FIRECRAWL_API_URL": "http://mahal.local:3002",
+        "FIRECRAWL_API_URL": "http://localhost:3002",
         "FIRECRAWL_API_KEY": "your-firecrawl-api-key",
         "FIRECRAWL_RETRY_MAX_ATTEMPTS": "5",
         "FIRECRAWL_RETRY_INITIAL_DELAY": "2000",
@@ -417,7 +415,7 @@ export GITHUB_PERSONAL_ACCESS_TOKEN="your-github-token"
 
 # FireCrawl (セルフホスト)
 export FIRECRAWL_API_KEY="your-firecrawl-api-key"
-export FIRECRAWL_API_URL="http://mahal.local:3002"
+export FIRECRAWL_API_URL="http://localhost:3002"
 
 # Service Mesh
 export ISTIO_VERSION="1.20.0"
@@ -841,7 +839,7 @@ Sequential-thinking: "データベース移行タスクを分解"
 **基本設定:**
 ```json
 {
-  "FIRECRAWL_API_URL": "http://mahal.local:3002",
+  "FIRECRAWL_API_URL": "http://localhost:3002",
   "FIRECRAWL_API_KEY": "your-firecrawl-api-key"
 }
 ```

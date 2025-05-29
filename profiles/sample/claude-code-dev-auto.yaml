@@ -1,0 +1,226 @@
+config:
+  limits.cpu: "4"
+  limits.memory: 16GB
+  limits.memory.swap: "false"
+  security.nesting: "true"
+  user.user-data: |
+    #cloud-config
+    package_update: true
+    package_upgrade: true
+    packages:
+      # 基本開発ツール
+      - curl
+      - wget
+      - git
+      - vim
+      - nano
+      - htop
+      - tree
+      - jq
+      - unzip
+      - zip
+      - build-essential
+      - software-properties-common
+      
+      # GitHub CLI
+      - gh
+      
+      # mDNS対応
+      - avahi-daemon
+      - libnss-mdns
+      
+      # SSH/リモート接続
+      - openssh-server
+      - openssh-client
+      
+      # Claude Code実行環境
+      - nodejs
+      - npm
+      
+      # Python開発環境
+      - python3
+      - python3-pip
+      - python3-venv
+      - python3-dev
+      
+      # Rust開発環境 (事前パッケージ)
+      - rustc
+      - cargo
+      
+      # システム管理
+      - sudo
+      - systemd
+      
+      # Docker (オプション)
+      - docker.io
+      - docker-compose
+      
+    runcmd:
+      # SSH設定
+      - systemctl enable ssh
+      - systemctl start ssh
+      
+      # claude_codeユーザーの作成
+      - useradd -m -s /bin/bash claude_code
+      - usermod -aG sudo claude_code
+      - echo "claude_code ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/claude_code
+      - mkdir -p /home/claude_code/.ssh
+      - chmod 700 /home/claude_code/.ssh
+      - chown claude_code:claude_code /home/claude_code/.ssh
+      
+      # Node.js環境セットアップ
+      - curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+      - apt-get install -y nodejs
+      - npm install -g yarn pnpm
+      
+      # Python環境セットアップ
+      - pip3 install --upgrade pip
+      - pip3 install pipenv poetry virtualenv
+      
+      # Rust環境セットアップ (claude_codeユーザー)
+      - sudo -u claude_code bash -c 'curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y'
+      - sudo -u claude_code bash -c 'echo "source ~/.cargo/env" >> ~/.bashrc'
+      
+      # Docker設定
+      - systemctl enable docker
+      - systemctl start docker
+      - usermod -aG docker claude_code
+      
+      # Claude Code インストール
+      - sudo -u claude_code bash -c 'curl -fsSL https://console.anthropic.com/install.sh | sh'
+      
+      # 開発用ディレクトリ作成
+      - sudo -u claude_code mkdir -p /home/claude_code/workspace
+      - sudo -u claude_code mkdir -p /home/claude_code/projects
+      - sudo -u claude_code mkdir -p /home/claude_code/claude-config
+      - chown -R claude_code:claude_code /home/claude_code/workspace
+      - chown -R claude_code:claude_code /home/claude_code/projects
+      - chown -R claude_code:claude_code /home/claude_code/claude-config
+      
+      # GitHub CLIの設定
+      - type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+      - curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+      - sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+      - echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+      - sudo apt update
+      - sudo apt install gh -y
+      
+      # mDNS設定
+      - systemctl enable avahi-daemon
+      - systemctl start avahi-daemon
+      - |
+        # NSSwitch設定を更新してmDNSを有効化
+        if ! grep -q "mdns" /etc/nsswitch.conf; then
+          sed -i 's/hosts:.*/hosts:          files mdns4_minimal [NOTFOUND=return] dns mdns4/' /etc/nsswitch.conf
+        fi
+      
+      # Claude Code設定の自動適用
+      - |
+        sudo -u claude_code bash << 'CLAUDE_CONFIG'
+        # MCP設定ファイルの作成
+        cat > ~/.claude.json << 'EOF'
+        {
+          "mcpServers": {
+            
+            "github": {
+              "type": "stdio",
+              "command": "npx",
+              "args": ["-y", "@modelcontextprotocol/server-github"],
+              "env": {
+                "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+              }
+            },
+            
+            "postgres": {
+              "type": "stdio",
+              "command": "npx",
+              "args": ["-y", "@modelcontextprotocol/server-postgres"],
+              "env": {
+                "POSTGRES_CONNECTION_STRING": "postgresql://user:pass@localhost:5432/microservices_db"
+              }
+            },
+            
+            "docker": {
+              "type": "stdio",
+              "command": "npx",
+              "args": ["-y", "@modelcontextprotocol/server-docker"]
+            }
+          }
+        }
+        EOF
+        
+        # パーミッション設定ファイルの作成
+        mkdir -p ~/.claude
+        cat > ~/.claude/settings.json << 'EOF'
+        {
+          "permissions": {
+            "allow": [
+              "Edit",
+              "Read",
+              "WebFetch",
+              "Bash(git:*)",
+              "Bash(npm:*)",
+              "Bash(npx:*)",
+              "Bash(yarn:*)",
+              "Bash(node:*)",
+              "Bash(docker:*)",
+              "Bash(docker-compose:*)",
+              "Bash(kubectl:*)",
+              "Bash(curl:*)",
+              "Bash(jq:*)",
+              "Bash(ls:*)",
+              "Bash(cat:*)",
+              "Bash(grep:*)",
+              "Bash(ps:*)",
+              "Bash(htop:*)"
+            ],
+            "deny": [
+              "Bash(rm -rf /*)",
+              "Bash(sudo rm:*)",
+              "Bash(chmod 777:*)"
+            ]
+          },
+          "theme": "dark",
+          "notifications": {
+            "enabled": true
+          }
+        }
+        EOF
+        
+        # カスタムコマンドディレクトリの作成
+        mkdir -p ~/.claude/commands
+        mkdir -p ~/projects/.claude/commands
+        
+        # 基本的なディレクトリの作成
+        mkdir -p ~/workspace
+        mkdir -p ~/projects
+        
+        # 環境変数の設定
+        cat >> ~/.bashrc << 'EOF'
+        
+        # Claude Code Environment Variables
+        export GITHUB_PERSONAL_ACCESS_TOKEN="your-github-token"
+        export DATABASE_URL="postgresql://user:pass@localhost:5432/microservices_db"
+        export REDIS_URL="redis://localhost:6379"
+        export DOCKER_BUILDKIT=1
+        export COMPOSE_DOCKER_CLI_BUILD=1
+        export NODE_ENV=development
+        export DEBUG="microservices:*"
+        export LOG_LEVEL="debug"
+        # End Claude Code Environment Variables
+        EOF
+        
+        CLAUDE_CONFIG
+      
+description: Claude Code development environment with auto-configuration
+devices:
+  eth0:
+    name: eth0
+    network: lxdbr0
+    type: nic
+  root:
+    path: /
+    pool: default
+    size: 80GB
+    type: disk
+name: claude-code-dev-auto

@@ -1,0 +1,42 @@
+{
+  "mcp": {
+    "mcpServers": {}
+  },
+  
+  "permissions": {
+    "permissions": {
+      "allow": [
+        "Edit",
+        "Read",
+        "WebFetch",
+        
+        "Bash(git:*)",
+        "Bash(gh:*)",
+        "Bash(npm:*)",
+        "Bash(node:*)",
+        "Bash(python3:*)",
+        "Bash(pip3:*)",
+        
+        "Bash(ls:*)",
+        "Bash(cat:*)",
+        "Bash(grep:*)",
+        "Bash(curl:*)",
+        "Bash(ps:*)"
+      ],
+      "deny": [
+        "Bash(rm -rf:*)",
+        "Bash(sudo:*)"
+      ]
+    },
+    "theme": "dark",
+    "notifications": {
+      "enabled": true
+    }
+  },
+  
+  "environment": {
+    "NODE_ENV": "development"
+  },
+  
+  "customCommands": []
+}
