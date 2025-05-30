@@ -15,7 +15,7 @@ VS CodeからSSH接続でClaude Codeを実行するための専用LXCコンテ�
 
 ### LXD/LXC環境
 - **LXD バージョン**: 5.0.4 (Client/Server)
-- **ネットワーク**: lxdbr0 (10.119.132.1/24)
+- **ネットワーク**: lxdbr0 (10.x.x.1/24)
 - **ストレージプール**: default (dirドライバー)
 
 ## 自動セットアップスクリプト
@@ -31,8 +31,11 @@ VS CodeからSSH接続でClaude Codeを実行するための専用LXCコンテ�
 # カスタム名でセットアップ
 ./scripts/auto-setup-claude-container.sh my-container claude-code-dev
 
-# 外部アクセス対応でセットアップ
+# 外部アクセス対応でセットアップ（自動ポート割り当て）
 ./scripts/auto-setup-claude-container.sh my-container claude-code-dev --external
+
+# 外部アクセス対応でセットアップ（指定ポート）
+./scripts/auto-setup-claude-container.sh my-container claude-code-dev --external 2223
 
 # ヘルプ表示
 ./scripts/auto-setup-claude-container.sh --help
@@ -46,7 +49,9 @@ VS CodeからSSH接続でClaude Codeを実行するための専用LXCコンテ�
 - 追加ツールスクリプトの配置
 - claude-configファイルのコピー
 - （オプション）外部アクセス設定
-  - LXD Proxy Device（ポート2222）
+  - 動的ポート割り当て（範囲: 2222-2299）
+  - ポート競合の自動回避
+  - LXD Proxy Deviceの設定
   - fail2ban/ufwのインストールと設定
 
 ### 手動セットアップ
@@ -1019,7 +1024,7 @@ ufw --force enable
 ufw default deny incoming
 ufw default allow outgoing
 ufw allow ssh
-ufw allow from 10.119.132.0/24 to any port 22
+ufw allow from 10.x.x.0/24 to any port 22
 ufw status verbose
 EOF
 ```

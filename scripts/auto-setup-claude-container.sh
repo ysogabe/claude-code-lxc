@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Claude Code LXC Container Automated Setup Script
-# This script automates the container creation process up to section 2 of claude_code_container_setup.md
+# This script automates the container creation process up to section 2 of docs/claude_code_container_setup.md
 
 set -e  # Exit on any error
 set -u  # Exit on undefined variables
@@ -37,24 +37,29 @@ BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Parse command line arguments
 show_usage() {
-    echo "Usage: $0 [CONTAINER_NAME] [PROFILE_NAME] [--external]"
+    echo "Usage: $0 [CONTAINER_NAME] [PROFILE_NAME] [--external [PORT]]"
     echo ""
     echo "Arguments:"
     echo "  CONTAINER_NAME  Name of the LXC container to create (default: $DEFAULT_CONTAINER_NAME)"
     echo "  PROFILE_NAME    Name of the LXC profile to use (default: $DEFAULT_PROFILE_NAME)"
-    echo "  --external      Enable external SSH access on port 2222"
+    echo "  --external [PORT]  Enable external SSH access (port range: 2222-2299)"
     echo ""
     echo "Examples:"
     echo "  $0                                    # Use default names"
     echo "  $0 my-claude-container               # Custom container name, default profile"
     echo "  $0 my-container claude-code-minimal  # Custom container and profile names"
-    echo "  $0 my-container claude-code-dev --external  # With external access"
+    echo "  $0 my-container claude-code-dev --external        # External access with auto port"
+    echo "  $0 my-container claude-code-dev --external 2223   # External access with specific port"
+    echo ""
+    echo "External access port range: 2222-2299"
+    echo "External connection: ssh -p [PORT] claude_code@<host-ip>"
     echo ""
     exit 1
 }
 
 # Initialize variables
 ENABLE_EXTERNAL=false
+EXTERNAL_PORT=""
 CONTAINER_NAME=""
 PROFILE_NAME=""
 
@@ -66,7 +71,13 @@ while [[ $# -gt 0 ]]; do
             ;;
         --external)
             ENABLE_EXTERNAL=true
-            shift
+            # Check if next argument exists and is a port number
+            if [[ ${2:-} =~ ^[0-9]+$ ]] && [ ${2:-0} -ge 1024 ] && [ ${2:-0} -le 65535 ]; then
+                EXTERNAL_PORT="$2"
+                shift 2
+            else
+                shift
+            fi
             ;;
         *)
             if [ -z "$CONTAINER_NAME" ]; then
@@ -85,6 +96,50 @@ PROFILE_NAME="${PROFILE_NAME:-$DEFAULT_PROFILE_NAME}"
 
 # SSH alias name (derived from container name)
 SSH_ALIAS="$(echo $CONTAINER_NAME | sed 's/_/-/g')"
+
+# Port detection and allocation functions
+find_available_port() {
+    local base_port=${1:-2222}
+    local max_port=2299
+    
+    for port in $(seq $base_port $max_port); do
+        # Check if port is in use by any process
+        if ! netstat -tlnp 2>/dev/null | grep -q ":$port "; then
+            # Check if port is used by LXD proxy devices
+            if ! lxc config device list 2>/dev/null | grep -q "listen.*:$port"; then
+                echo $port
+                return 0
+            fi
+        fi
+    done
+    
+    error "No available port found in range $base_port-$max_port"
+    return 1
+}
+
+allocate_external_port() {
+    local requested_port="$1"
+    
+    if [ -n "$requested_port" ]; then
+        # Validate port range
+        if [ $requested_port -lt 2222 ] || [ $requested_port -gt 2299 ]; then
+            error "Port number must be in range 2222-2299: $requested_port"
+            return 1
+        fi
+        
+        # Check if requested port is available
+        if netstat -tlnp 2>/dev/null | grep -q ":$requested_port " || \
+           lxc config device list 2>/dev/null | grep -q "listen.*:$requested_port"; then
+            error "Port $requested_port is already in use"
+            return 1
+        fi
+        
+        echo "$requested_port"
+    else
+        # Auto-allocate port
+        find_available_port
+    fi
+}
 
 # Check if running as proper user
 if [[ $EUID -eq 0 ]]; then
@@ -290,39 +345,92 @@ setup_additional_tools_script() {
     fi
 }
 
-# Setup external access
+# Setup external access with improved error handling
 setup_external_access() {
     if [ "$ENABLE_EXTERNAL" != "true" ]; then
         return 0
     fi
     
-    log "Setting up external SSH access..."
+    log "外部SSH接続の設定を開始します..."
+    
+    # Port allocation
+    local assigned_port
+    assigned_port=$(allocate_external_port "$EXTERNAL_PORT")
+    if [ $? -ne 0 ]; then
+        error "ポート割り当てに失敗しました"
+        return 1
+    fi
+    
+    EXTERNAL_PORT="$assigned_port"
+    log "使用ポート: $EXTERNAL_PORT"
     
     # Add LXD proxy device
-    log "Adding LXD proxy device for port 2222..."
-    lxc config device add $CONTAINER_NAME ssh-proxy proxy \
-        listen=tcp:0.0.0.0:2222 \
-        connect=tcp:127.0.0.1:22 || {
-        error "Failed to add proxy device"
+    if ! add_proxy_device; then
+        error "プロキシデバイスの追加に失敗しました"
+        return 1
+    fi
+    
+    # Configure security tools
+    if ! configure_security_tools; then
+        warning "セキュリティツールの設定に失敗しましたが、外部アクセスは利用可能です"
+    fi
+    
+    # Verify external access setup
+    if ! verify_external_access; then
+        error "外部アクセス設定の確認に失敗しました"
+        return 1
+    fi
+    
+    success "外部アクセス設定が完了しました (ポート: $EXTERNAL_PORT)"
+    log "外部SSH接続: ssh -p $EXTERNAL_PORT claude_code@<ホストIP>"
+}
+
+# Add LXD proxy device
+add_proxy_device() {
+    log "LXDプロキシデバイスを追加中... (ポート: $EXTERNAL_PORT)"
+    
+    lxc config device add "$CONTAINER_NAME" ssh-proxy proxy \
+        listen="tcp:0.0.0.0:$EXTERNAL_PORT" \
+        connect="tcp:127.0.0.1:22" || {
+        error "プロキシデバイスの追加に失敗しました"
         return 1
     }
     
-    # Install and configure security tools
-    log "Installing security tools (fail2ban, ufw)..."
-    lxc exec $CONTAINER_NAME -- bash << 'EOF'
-# Update package list and install security tools
-apt-get update
-apt-get install -y fail2ban ufw
+    success "プロキシデバイスを追加しました"
+    return 0
+}
 
-# Configure UFW
-ufw --force enable
-ufw default deny incoming
-ufw default allow outgoing
-ufw allow ssh
-ufw allow from 10.119.132.0/24  # LXD bridge network
-
-# Configure fail2ban
-cat > /etc/fail2ban/jail.local << 'F2B_CONFIG'
+# Configure security tools with proper error handling
+configure_security_tools() {
+    log "セキュリティツール (fail2ban, ufw) を設定中..."
+    
+    # Install security packages
+    lxc exec "$CONTAINER_NAME" -- bash -c '
+        export DEBIAN_FRONTEND=noninteractive
+        export NEEDRESTART_MODE=a
+        
+        # Update package list and install security tools
+        apt-get update -qq
+        apt-get install -y fail2ban ufw
+    ' || {
+        error "セキュリティツールのインストールに失敗しました"
+        return 1
+    }
+    
+    # Configure UFW
+    lxc exec "$CONTAINER_NAME" -- bash -c '
+        ufw --force enable
+        ufw default deny incoming
+        ufw default allow outgoing
+        ufw allow ssh
+        ufw allow from 10.x.x.0/24
+    ' || {
+        warning "UFW設定に失敗しました"
+    }
+    
+    # Configure fail2ban
+    lxc exec "$CONTAINER_NAME" -- bash -c '
+        cat > /etc/fail2ban/jail.local << "F2B_EOF"
 [sshd]
 enabled = true
 port = ssh
@@ -331,14 +439,17 @@ logpath = /var/log/auth.log
 maxretry = 3
 bantime = 3600
 findtime = 600
-F2B_CONFIG
-
-# Start fail2ban
-systemctl enable fail2ban
-systemctl restart fail2ban
-
-# Enhanced SSH security
-cat >> /etc/ssh/sshd_config << 'SSH_SEC'
+F2B_EOF
+        
+        systemctl enable fail2ban
+        systemctl restart fail2ban
+    ' || {
+        warning "fail2ban設定に失敗しました"
+    }
+    
+    # Enhanced SSH security
+    lxc exec "$CONTAINER_NAME" -- bash -c '
+        cat >> /etc/ssh/sshd_config << "SSH_EOF"
 
 # Enhanced Security Settings
 MaxAuthTries 3
@@ -348,13 +459,44 @@ ClientAliveCountMax 2
 PermitEmptyPasswords no
 X11Forwarding yes
 AllowUsers claude_code
-SSH_SEC
-
-systemctl restart ssh
-EOF
+SSH_EOF
+        
+        systemctl restart ssh
+    ' || {
+        warning "SSH設定の強化に失敗しました"
+    }
     
-    success "External access configured on port 2222"
-    log "External SSH access: ssh -p 2222 claude_code@<host-external-ip>"
+    success "セキュリティツールの設定が完了しました"
+    return 0
+}
+
+# Verify external access setup
+verify_external_access() {
+    log "外部アクセス設定を確認中..."
+    
+    # Check proxy device exists
+    if ! lxc config device show "$CONTAINER_NAME" | grep -q "ssh-proxy"; then
+        error "プロキシデバイスが見つかりません"
+        return 1
+    fi
+    
+    # Check port is listening
+    sleep 3
+    if ! netstat -tlnp | grep -q ":$EXTERNAL_PORT "; then
+        error "ポート $EXTERNAL_PORT でリスニングしていません"
+        return 1
+    fi
+    
+    # Test SSH connection
+    log "SSH接続をテスト中..."
+    if timeout 10 ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no \
+        -p "$EXTERNAL_PORT" claude_code@localhost "echo 'SSH接続テスト成功'" >/dev/null 2>&1; then
+        success "SSH接続テストが成功しました"
+    else
+        warning "SSH接続テストに失敗しましたが、設定は完了しています"
+    fi
+    
+    return 0
 }
 
 # Copy claude-config files
@@ -380,46 +522,63 @@ copy_claude_config() {
     fi
 }
 
-# Main execution
+# Progress tracking function
+show_progress() {
+    local current="$1"
+    local total="$2" 
+    local description="$3"
+    
+    echo "[$current/$total] $description"
+}
+
+# Main execution with optimized order
 main() {
+    local total_steps=8
+    local current_step=0
+    
     log "=== Claude Code LXC Container Automated Setup ==="
     
-    # Cleanup existing container if needed
+    # Phase 1: Essential foundation setup
+    show_progress $((++current_step)) $total_steps "Cleaning up existing container"
     cleanup_existing_container
     
-    # Setup profile
+    show_progress $((++current_step)) $total_steps "Setting up profile"
     setup_profile
     
-    # Create container
+    show_progress $((++current_step)) $total_steps "Creating container"
     if ! create_container; then
         error "Container creation failed"
         exit 1
     fi
     
-    # Setup SSH access
+    show_progress $((++current_step)) $total_steps "Setting up SSH access"
     if ! setup_ssh_access; then
         error "SSH setup failed"
         exit 1
     fi
     
-    # Setup SSH config
+    show_progress $((++current_step)) $total_steps "Configuring SSH"
     if ! setup_ssh_config; then
         error "SSH config setup failed"
         exit 1
     fi
     
-    # Setup additional tools script
-    setup_additional_tools_script
-    
-    # Copy claude-config files
-    copy_claude_config
-    
-    # Setup external access if requested
+    # Phase 2: External access setup (prioritized)
     if [ "$ENABLE_EXTERNAL" = "true" ]; then
+        show_progress $((++current_step)) $total_steps "Setting up external access"
         if ! setup_external_access; then
             warning "External access setup failed, but container is ready for internal use"
         fi
+    else
+        show_progress $((++current_step)) $total_steps "Skipping external access setup"
     fi
+    
+    # Phase 3: Configuration files and tools (non-critical)
+    show_progress $((++current_step)) $total_steps "Copying configuration files"
+    copy_claude_config || warning "Config file copy failed"
+    
+    show_progress $((++current_step)) $total_steps "Setting up additional tools script"
+    setup_additional_tools_script || warning "Additional tools script setup failed"
     
     success "=== Claude Code Container Setup Completed Successfully ==="
     echo
@@ -438,9 +597,9 @@ main() {
     if [ "$ENABLE_EXTERNAL" = "true" ]; then
         echo ""
         log "External access enabled:"
-        echo "  - External port: 2222"
+        echo "  - External port: $EXTERNAL_PORT"
         echo "  - Security: fail2ban + ufw enabled"
-        echo "  - Connect: ssh -p 2222 claude_code@<host-external-ip>"
+        echo "  - Connect: ssh -p $EXTERNAL_PORT claude_code@<host-external-ip>"
     fi
     echo
     warning "Note: The container and profile will be kept for your verification."

@@ -51,7 +51,7 @@ ufw --force enable
 ufw default deny incoming
 ufw default allow outgoing
 ufw allow ssh
-ufw allow from 10.119.132.0/24  # LXD bridgeからのアクセス
+ufw allow from 10.x.x.0/24  # LXD bridgeからのアクセス
 ```
 
 ### fail2ban設定

@@ -1,59 +1,59 @@
 # Claude Code LXC Container Setup
 
-Claude CodeをLXCコンテナ環境で実行するための設定ガイドとドキュメント集です。
+Configuration guides and tools for running Claude Code in LXC container environments.
 
-## 概要
+## Overview
 
-このリポジトリには、以下の主要なドキュメントとツールが含まれています：
+This repository contains the following key documents and tools:
 
-1. **claude_code_container_setup.md** - VS CodeからSSH接続でClaude Codeを実行するためのLXCコンテナ構築手順
-2. **claude-code-microservices-config.md** - マイクロサービス開発に特化したClaude Codeの詳細な設定ガイド
-3. **external-access-design.md** - 外部ネットワークからのSSH接続を可能にする設計ドキュメント
-4. **profiles/** - 再利用可能なLXCプロファイルテンプレート
-5. **claude-config/** - Claude Code設定テンプレート
-6. **reports/** - 検証結果、問題解決記録、設計検討資料
+1. **docs/claude_code_container_setup.md** - LXC container setup procedures for running Claude Code via SSH from VS Code
+2. **docs/claude-code-microservices-config.md** - Detailed configuration guide for Claude Code specialized in microservices development
+3. **docs/external-access-design.md** - Design document for enabling SSH connections from external networks
+4. **profiles/** - Reusable LXC profile templates
+5. **claude-config/** - Claude Code configuration templates
+6. **docs/** - Public documentation and design materials
 
-## 特徴
+## Features
 
-- 🐳 **コンテナ化された開発環境** - LXCコンテナによる分離された安全な実行環境
-- 🔧 **マイクロサービス対応** - Docker、Kubernetes、各種MCPサーバーの設定を含む
-- 🔒 **セキュリティ重視** - 詳細なパーミッション設定とSSHセキュリティ強化
-- 📦 **MCP (Model Context Protocol) サポート** - filesystem、GitHub、PostgreSQL、Docker等の統合
-- 💻 **VS Code統合** - Remote-SSH拡張機能による快適な開発体験
-- 🔗 **GitHub CLI (gh) 統合** - GitHub操作をコマンドラインから直接実行
-- 🌐 **mDNS対応** - `.local`ドメインでコンテナに簡単アクセス
-- 🌍 **外部SSH接続対応** - LXD Proxy Deviceによる安全な外部アクセス（ポート2222）
-- ⚡ **高速セットアップ** - cloud-init最適化により約2分でコンテナ構築完了
-- 🔐 **柔軟な認証方式** - SSHキー認証、パスワード認証、ハイブリッド認証に対応
+- 🐳 **Containerized Development Environment** - Isolated and secure execution environment using LXC containers
+- 🔧 **Microservices Ready** - Configuration for Docker, Kubernetes, and various MCP servers
+- 🔒 **Security Focused** - Detailed permission settings and SSH security hardening
+- 📦 **MCP (Model Context Protocol) Support** - Integration with filesystem, GitHub, PostgreSQL, Docker, etc.
+- 💻 **VS Code Integration** - Comfortable development experience with Remote-SSH extension
+- 🔗 **GitHub CLI (gh) Integration** - Direct GitHub operations from command line
+- 🌐 **mDNS Support** - Easy container access via `.local` domains
+- 🌍 **External SSH Connection Support** - Dynamic port allocation (2222-2299) with port conflict avoidance
+- ⚡ **Fast Setup** - Container construction completed in ~2 minutes with cloud-init optimization
+- 🔐 **Flexible Authentication** - Support for SSH key, password, and hybrid authentication
 
-## クイックスタート
+## Quick Start
 
-### 前提条件
+### Prerequisites
 
-- Ubuntu 22.04以降のホストシステム
-- LXD/LXCがインストール済み
-- 十分なシステムリソース（推奨: 4CPU、16GB RAM、80GB ストレージ）
+- Ubuntu 22.04 or later host system
+- LXD/LXC installed
+- Sufficient system resources (Recommended: 4 CPU cores, 16GB RAM, 80GB storage)
 
-### 基本的なセットアップ
+### Basic Setup
 
 ```bash
-# 1. リポジトリのクローン
+# 1. Clone the repository
 git clone https://github.com/yourusername/claude_code_lxc.git
 cd claude_code_lxc
 
-# 2. プロファイルの適用とコンテナ作成
+# 2. Apply profiles and create container
 cd profiles
-./apply-profile.sh -n claude-code-dev  # 標準プロファイル
-# または
-./apply-profile.sh -n claude-code-external  # 外部SSH接続対応プロファイル
+./apply-profile.sh -n claude-code-dev  # Standard profile
+# or
+./apply-profile.sh -n claude-code-external  # External SSH access profile
 
-# 3. コンテナの作成
+# 3. Create container
 lxc launch ubuntu:22.04 claude-code-container --profile claude-code-dev
 
-# 4. 追加ツールのインストール（必要に応じて）
+# 4. Install additional tools (optional)
 lxc exec claude-code-container -- bash < setup-scripts/additional-tools.sh
 
-# 5. Claude Code設定の適用（オプション）
+# 5. Apply Claude Code configuration (optional)
 lxc exec claude-code-container -- bash
 cd /home/ubuntu
 git clone https://github.com/yourusername/claude_code_lxc.git
@@ -61,136 +61,140 @@ cd claude_code_lxc/claude-config
 ./apply-config.sh microservices-full
 ```
 
-## ドキュメント構成
+## Documentation Structure
 
 ### profiles/
-LXCプロファイル定義とヘルパースクリプト：
-- `claude-code-dev.yaml` - 標準開発環境プロファイル（4CPU、16GB RAM）
-- `claude-code-dev-auto.yaml` - MCP/権限設定自動適用版プロファイル
-- `claude-code-minimal.yaml` - 最小構成プロファイル（2CPU、8GB RAM）
-- `claude-code-external.yaml` - 外部SSH接続対応プロファイル（LXD Proxy Device設定込み）
-- `apply-profile.sh` - プロファイル適用ヘルパースクリプト
-- `README.md` - プロファイルの詳細説明
+LXC profile definitions and helper scripts:
+- `claude-code-dev.yaml` - Standard development environment profile (4 CPU, 16GB RAM)
+- `claude-code-dev-auto.yaml` - Profile with automatic MCP/permission configuration
+- `claude-code-minimal.yaml` - Minimal configuration profile (2 CPU, 8GB RAM)
+- `claude-code-external.yaml` - External SSH access profile (includes LXD Proxy Device configuration)
+- `apply-profile.sh` - Profile application helper script
+- `README.md` - Detailed profile documentation
 
 ### claude-config/
-Claude Code設定テンプレートとヘルパースクリプト：
-- `microservices-full.json` - マイクロサービス開発用フル機能設定
-- `web-development.json` - Web開発用標準設定
-- `data-science.json` - データサイエンス用設定
-- `minimal.json` - 最小構成設定
-- `apply-config.sh` - 設定適用ヘルパースクリプト
-- `README.md` - 設定テンプレートの詳細説明
+Claude Code configuration templates and helper scripts:
+- `microservices-full.json` - Full-featured configuration for microservices development
+- `web-development.json` - Standard configuration for web development
+- `data-science.json` - Configuration for data science
+- `minimal.json` - Minimal configuration
+- `apply-config.sh` - Configuration application helper script
+- `README.md` - Detailed configuration template documentation
 
-### 主要ドキュメント
+### Key Documents
 
-#### claude_code_container_setup.md
-LXCコンテナの構築から運用まで、以下の内容を網羅：
-- LXCプロファイルの作成と設定
-- コンテナの初期設定とSSH設定（キー認証、パスワード認証、ハイブリッド認証）
-- Claude Code環境のセットアップ
-- VS Code Remote-SSH接続設定
-- 開発ツールのインストール
-- プロファイルの修正と更新方法
-- トラブルシューティング
+#### docs/claude_code_container_setup.md
+Comprehensive guide from LXC container construction to operation:
+- LXC profile creation and configuration
+- Container initial setup and SSH configuration (key auth, password auth, hybrid auth)
+- Claude Code environment setup
+- VS Code Remote-SSH connection configuration
+- Development tools installation
+- Profile modification and update procedures
+- Troubleshooting
 
-#### external-access-design.md
-外部ネットワークからのSSH接続を実現する設計：
-- LXD Proxy Deviceによるポートフォワーディング設定
-- セキュリティ設定（fail2ban、UFW）
-- VS Code Remote-SSH設定例
+#### docs/external-access-design.md
+Design for achieving SSH connections from external networks:
+- Port forwarding configuration using LXD Proxy Device
+- Security configuration (fail2ban, UFW)
+- VS Code Remote-SSH configuration examples
 
-#### claude-code-microservices-config.md
-マイクロサービス開発に必要な詳細設定：
-- 設定ファイルの階層構造
-- パーミッション設定の詳細
-- MCPサーバーの設定と活用方法
-- カスタムコマンドの作成
-- 環境変数とエイリアス設定
-- FireCrawl MCPサーバーの設定
+#### docs/claude-code-microservices-config.md
+Detailed configuration required for microservices development:
+- Configuration file hierarchy
+- Detailed permission settings
+- MCP server configuration and utilization
+- Custom command creation
+- Environment variables and alias configuration
+- FireCrawl MCP server configuration
 
-### reports/
-検証結果と問題解決の記録：
-- `container-setup-verification-results.md` - コンテナ構築の検証結果
-- `external-access-design-considerations.md` - 外部接続設計の検討過程
-- `setup-issues-and-fixes.md` - セットアップ時の問題と解決策
-- `consistency-check-report.md` - 設定ファイルの一貫性チェック結果
+### docs/
+Public documentation:
+- `external-access-design-considerations.md` - External access design considerations
+- `profile-improvement-plan.md` - Profile improvement plan
+- `github-publish-checklist.md` - GitHub publish checklist
+- `README.md` - Documentation overview
 
-## 主な機能
+## Key Features
 
-### MCPサーバー統合
-- **filesystem** - プロジェクト外のファイルアクセス
-- **github** - GitHub API統合
-- **postgres/redis** - データベース接続
-- **docker/kubernetes** - コンテナオーケストレーション
-- **puppeteer/playwright** - ブラウザ自動化
+### MCP Server Integration
+- **filesystem** - Access to files outside the project
+- **github** - GitHub API integration
+- **postgres/redis** - Database connections
+- **docker/kubernetes** - Container orchestration
+- **puppeteer/playwright** - Browser automation
 
-### セキュリティ機能
-- 細かいパーミッション制御
-- SSH鍵認証
-- ファイアウォール設定
-- 危険なコマンドのブロック
+### Security Features
+- Granular permission control
+- SSH key authentication
+- Firewall configuration
+- Dangerous command blocking
 
-### 開発支援機能
-- カスタムコマンド（デプロイ、ヘルスチェック等）
-- 便利なエイリアス設定
-- 自動バックアップとスナップショット
-- リソース監視
+### Development Support Features
+- Custom commands (deploy, health check, etc.)
+- Convenient alias settings
+- Automatic backup and snapshots
+- Resource monitoring
 
-## 使用例
+## Usage Examples
 
-### マイクロサービスのデプロイ
+### Microservice Deployment
 ```bash
 claude
 > /microservice-deploy user-service:v1.2.3
 ```
 
-### ヘルスチェックの実行
+### Health Check Execution
 ```bash
 claude
 > /service-health-check payment-service
 ```
 
-### 新規サービスの作成
+### New Service Creation
 ```bash
 claude
 > /setup-new-service notification-service
 ```
 
-## トラブルシューティング
+## Troubleshooting
 
-問題が発生した場合は、以下を確認してください：
+If you encounter issues, please check the following:
 
-1. **SSH接続の問題** - `claude_code_container_setup.md`のセクション10を参照
-2. **外部SSH接続の問題** - `external-access-design.md`および`profiles/claude-code-external.yaml`を参照
-3. **MCP接続エラー** - `claude-code-microservices-config.md`のセクション8を参照
-4. **パーミッションエラー** - 設定ファイルの権限設定を確認
-5. **cloud-init関連の問題** - `reports/setup-issues-and-fixes.md`を参照
-6. **GitHub CLI認証の問題** - `claude_code_container_setup.md`のセクション11を参照
+1. **SSH Connection Issues** - Refer to Section 10 of `docs/claude_code_container_setup.md`
+2. **External SSH Connection Issues** - Refer to `docs/external-access-design.md` and `profiles/claude-code-external.yaml`
+3. **MCP Connection Errors** - Refer to Section 8 of `docs/claude-code-microservices-config.md`
+4. **Permission Errors** - Check configuration file permission settings
+5. **cloud-init Related Issues** - Check cloud-init configuration in profile files
+6. **GitHub CLI Authentication Issues** - Refer to Section 11 of `docs/claude_code_container_setup.md`
 
-## 貢献
+## Contributing
 
-プルリクエストや改善提案を歓迎します。大きな変更を行う場合は、まずイシューを作成して議論してください。
+Pull requests and improvement suggestions are welcome. For major changes, please create an issue first for discussion.
 
-## ライセンス
+## Latest Updates
 
-このプロジェクトはMITライセンスの下で公開されています。詳細は[LICENSE](LICENSE)ファイルを参照してください。
+- Added external SSH connection support profile (`claude-code-external.yaml`)
+- Implemented secure external access using LXD Proxy Device
+- Expanded SSH authentication options (key auth, password auth, hybrid)
+- Optimized cloud-init configuration for reduced build time (~2 minutes)
+- Integrated GitHub CLI and mDNS support
+- Organized documentation and moved public documents to docs folder
 
-## 作者
+## Changelog
+
+For project change history, see [CHANGELOG.md](./CHANGELOG.md).
+
+## License
+
+This project is released under the [MIT License](./LICENSE).
+
+## Author
 
 Yoshio
 
-## 最新の更新
+## Related Links
 
-- 外部SSH接続対応プロファイル（`claude-code-external.yaml`）の追加
-- LXD Proxy Deviceによる安全な外部アクセス実装
-- SSH認証方式の選択肢拡充（キー認証、パスワード認証、ハイブリッド）
-- cloud-init設定の最適化による構築時間の短縮（約2分）
-- GitHub CLIとmDNSサポートの統合
-- ドキュメントの整理とreportsフォルダへの検証結果の移動
-
-## 関連リンク
-
-- [Claude Code公式ドキュメント](https://docs.anthropic.com/en/docs/claude-code)
-- [LXD公式ドキュメント](https://documentation.ubuntu.com/lxd/)
+- [Claude Code Official Documentation](https://docs.anthropic.com/en/docs/claude-code)
+- [LXD Official Documentation](https://documentation.ubuntu.com/lxd/)
 - [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)
 - [VS Code Remote Development](https://code.visualstudio.com/docs/remote/remote-overview)

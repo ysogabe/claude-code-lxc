@@ -5,8 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Repository Overview
 
 This repository contains configuration and setup documentation for Claude Code development environments:
-- **claude-code-microservices-config.md**: Comprehensive guide for microservices development with Claude Code
-- **claude_code_container_setup.md**: LXC container setup instructions for isolated Claude Code environments
+- **docs/claude-code-microservices-config.md**: Comprehensive guide for microservices development with Claude Code
+- **docs/claude_code_container_setup.md**: LXC container setup instructions for isolated Claude Code environments
 
 ## Common Commands
 

@@ -1,0 +1,65 @@
+# 内部ドキュメントとテスト結果
+reports/
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Temp files
+*.tmp
+*.temp
+.tmp/
+temp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local configuration
+*.local
+config/*.local
+.claude/
+
+# Test output
+test_output.log
+test-results/
+
+# Backup files
+*.bak
+backup/
+
+# Private keys
+*.pem
+*.key
+id_rsa*
+
+# Environment files
+.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+out/

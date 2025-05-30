@@ -98,7 +98,7 @@ install_claude_code() {
     
     # Install via npm
     if command -v npm &> /dev/null; then
-        sudo -u claude_code bash -c 'npm install -g @anthropic-ai/claude-code'
+        sudo bash -c 'npm install -g @anthropic-ai/claude-code'
         if [ $? -eq 0 ]; then
             success "Claude Code installed via npm"
         else
