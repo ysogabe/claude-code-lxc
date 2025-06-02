@@ -230,7 +230,7 @@ create_container() {
     log "Creating Claude Code container with profile '$PROFILE_NAME'..."
     
     # Launch container
-    lxc launch ubuntu:22.04 $CONTAINER_NAME --profile $PROFILE_NAME
+    lxc launch ubuntu:24.04 $CONTAINER_NAME --profile $PROFILE_NAME
     
     success "Container '$CONTAINER_NAME' created"
     

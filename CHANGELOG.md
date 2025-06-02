@@ -7,14 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING**: Upgraded base LXC image from Ubuntu 22.04 to Ubuntu 24.04.2 LTS
+- Improved cloud-init waiting mechanism with 60-second timeout before fallback
+- Enhanced error handling in setup scripts with better timeout management
+
 ### Fixed
 - Fixed cloud-init status --wait hanging in LXC containers
 - Implemented hybrid approach for cloud-init waiting with automatic fallback to polling
 - UFW firewall configuration now uses dynamic LXC network detection instead of hardcoded wildcards
 
-### Changed
-- Improved cloud-init waiting mechanism with 60-second timeout before fallback
-- Enhanced error handling in setup scripts with better timeout management
+### Added
+- Ubuntu 24.04.2 LTS support with Linux kernel 6.8/6.11 (HWE)
+- Extended LTS support until 2034 (previously 2032)
+- Improved security with latest package versions
+- Smaller container image size (258MiB vs 434MiB, ~40% reduction)
+
+### Security
+- Updated to latest OpenSSH 9.6p1 with enhanced security features
+- fail2ban 1.0.2 with improved Python 3 compatibility
+- UFW 0.36.2 with enhanced firewall management
+- Latest security patches and ESM Apps availability
 
 ## [0.1.0] - 2025-05-30
 
