@@ -418,13 +418,16 @@ configure_security_tools() {
     }
     
     # Configure UFW
-    lxc exec "$CONTAINER_NAME" -- bash -c '
+    # Get actual LXC bridge network
+    LXC_NETWORK=$(lxc network get lxdbr0 ipv4.address 2>/dev/null || echo "10.119.132.0/24")
+    
+    lxc exec "$CONTAINER_NAME" -- bash -c "
         ufw --force enable
         ufw default deny incoming
         ufw default allow outgoing
         ufw allow ssh
-        ufw allow from 10.x.x.0/24
-    ' || {
+        ufw allow from $LXC_NETWORK
+    " || {
         warning "UFW設定に失敗しました"
     }
     
