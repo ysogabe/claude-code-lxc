@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed cloud-init status --wait hanging in LXC containers
 - Implemented hybrid approach for cloud-init waiting with automatic fallback to polling
 - UFW firewall configuration now uses dynamic LXC network detection instead of hardcoded wildcards
+- Fixed Python package installation errors in Ubuntu 24.04 due to PEP 668 externally-managed-environment
+- Replaced legacy Python package management (pip, pipenv, poetry) with modern uv package manager
 
 ### Added
 - Ubuntu 24.04.2 LTS support with Linux kernel 6.8/6.11 (HWE)

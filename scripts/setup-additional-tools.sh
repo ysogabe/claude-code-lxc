@@ -60,9 +60,8 @@ setup_python() {
         sudo apt-get install -y python3-pip python3-venv python3-dev
     fi
     
-    # Upgrade pip and install tools
-    python3 -m pip install --upgrade pip --user
-    python3 -m pip install pipenv poetry virtualenv --user
+    # Install uv for fast Python package management
+    curl -LsSf https://astral.sh/uv/install.sh | sh
     success "Python environment setup completed"
 }
 
