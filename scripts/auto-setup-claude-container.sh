@@ -165,6 +165,37 @@ profile_exists() {
     lxc profile list --format csv | grep -q "^$PROFILE_NAME,"
 }
 
+# Improved cloud-init waiting function with hybrid approach
+wait_for_cloud_init() {
+    log "Waiting for cloud-init to complete..."
+    
+    # First try the standard --wait with shorter timeout (60 seconds)
+    if timeout 60 lxc exec $CONTAINER_NAME -- cloud-init status --wait 2>/dev/null; then
+        success "Cloud-init completed successfully"
+        return 0
+    fi
+    
+    # Fallback to polling method if --wait hangs (common in LXC)
+    log "Fallback to polling method..."
+    local max_attempts=30
+    local attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        if lxc exec $CONTAINER_NAME -- cloud-init status 2>/dev/null | grep -q "status: done"; then
+            success "Cloud-init completed successfully (polling fallback, attempt $attempt)"
+            return 0
+        fi
+        
+        if [ $attempt -eq $max_attempts ]; then
+            warning "Cloud-init timeout after fallback, continuing anyway..."
+            return 1
+        fi
+        
+        sleep 10
+        ((attempt++))
+    done
+}
+
 # Function to cleanup existing container
 cleanup_existing_container() {
     if container_exists; then
@@ -207,11 +238,8 @@ create_container() {
     log "Waiting for container to start..."
     sleep 30
     
-    # Wait for cloud-init to complete (with timeout)
-    log "Waiting for cloud-init to complete..."
-    timeout 600 lxc exec $CONTAINER_NAME -- cloud-init status --wait || {
-        warning "Cloud-init timeout, continuing anyway..."
-    }
+    # Wait for cloud-init to complete with improved method
+    wait_for_cloud_init
     
     # Verify basic packages
     log "Verifying basic packages..."

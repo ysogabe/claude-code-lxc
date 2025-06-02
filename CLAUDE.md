@@ -35,6 +35,30 @@ ssh claude-code-dev
 claude --mcp-debug      # Debug MCP connections
 ```
 
+### GitHub Issue Management
+```bash
+# Create issue with English title and Japanese content
+gh issue create --title "Issue Title (English)" --body "$(cat <<'EOF'
+## 概要
+Japanese content here...
+
+## 根本原因
+**ファイル**: `path/to/file.sh:line`
+
+## 提案する解決策
+Japanese solution description...
+
+## 作業ブランチ
+`branch-name`
+
+詳細な技術報告書: `reports/issue-report.md`
+EOF
+)" --assignee @me
+
+# Link branch to issue
+gh issue develop <issue-number> --checkout
+```
+
 ### Custom Commands (defined in .claude/commands/)
 ```bash
 /microservice-deploy <service-name>:<version>
