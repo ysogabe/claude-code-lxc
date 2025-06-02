@@ -38,7 +38,7 @@ This repository contains the following key documents and tools:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/claude_code_lxc.git
+git clone https://github.com/ysogabe/claude-code-lxc.git
 cd claude_code_lxc
 
 # 2. Apply profiles and create container
@@ -51,12 +51,12 @@ cd profiles
 lxc launch ubuntu:22.04 claude-code-container --profile claude-code-dev
 
 # 4. Install additional tools (optional)
-lxc exec claude-code-container -- bash < setup-scripts/additional-tools.sh
+lxc exec claude-code-container -- bash < scripts/setup-additional-tools.sh
 
 # 5. Apply Claude Code configuration (optional)
 lxc exec claude-code-container -- bash
 cd /home/ubuntu
-git clone https://github.com/yourusername/claude_code_lxc.git
+git clone https://github.com/ysogabe/claude-code-lxc.git
 cd claude_code_lxc/claude-config
 ./apply-config.sh microservices-full
 ```
