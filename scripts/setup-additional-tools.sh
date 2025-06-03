@@ -41,6 +41,11 @@ setup_npm_prefix() {
     # Configure npm to use the user directory
     npm config set prefix '~/.npm-global'
     
+    # Configure npm security settings according to Claude Code guidelines
+    npm config set audit-level moderate
+    npm config set fund false
+    npm config set update-notifier false
+    
     # Add to PATH if not already added
     if ! echo $PATH | grep -q "$HOME/.npm-global/bin"; then
         export PATH="$HOME/.npm-global/bin:$PATH"
