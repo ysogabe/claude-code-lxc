@@ -31,6 +31,30 @@ error() {
 
 log "=== Additional Tools Installation ==="
 
+# Setup npm prefix for user-local installations
+setup_npm_prefix() {
+    log "Setting up npm prefix for user installations..."
+    
+    # Create npm global directory if it doesn't exist
+    mkdir -p ~/.npm-global
+    
+    # Configure npm to use the user directory
+    npm config set prefix '~/.npm-global'
+    
+    # Configure npm security settings according to Claude Code guidelines
+    npm config set audit-level moderate
+    npm config set fund false
+    npm config set update-notifier false
+    
+    # Add to PATH if not already added
+    if ! echo $PATH | grep -q "$HOME/.npm-global/bin"; then
+        export PATH="$HOME/.npm-global/bin:$PATH"
+        log "Added ~/.npm-global/bin to PATH for current session"
+    fi
+    
+    success "npm prefix configured for user installations"
+}
+
 # Node.js環境セットアップ（NodeSourceから最新LTS）
 install_nodejs() {
     log "Installing Node.js..."
@@ -44,8 +68,11 @@ install_nodejs() {
         sudo apt-get install -y nodejs
     fi
     
-    # Install global packages
-    sudo npm install -g yarn pnpm
+    # Setup npm prefix for user (before installing global packages)
+    setup_npm_prefix
+    
+    # Install global packages without sudo
+    npm install -g yarn pnpm
     success "Node.js installed successfully"
 }
 
@@ -95,11 +122,15 @@ install_github_cli() {
 install_claude_code() {
     log "Installing Claude Code..."
     
-    # Install via npm
+    # Install via npm (without sudo for proper auto-update support)
     if command -v npm &> /dev/null; then
-        sudo bash -c 'npm install -g @anthropic-ai/claude-code'
+        # Ensure npm prefix is configured
+        setup_npm_prefix
+        
+        # Install Claude Code without sudo
+        npm install -g @anthropic-ai/claude-code
         if [ $? -eq 0 ]; then
-            success "Claude Code installed via npm"
+            success "Claude Code installed via npm (with auto-update support)"
         else
             error "Claude Code installation failed via npm"
             return 1
@@ -129,10 +160,6 @@ create_directories() {
 setup_claude_environment() {
     log "Setting up Claude Code environment..."
     sudo -u claude_code bash << 'EOF'
-# Create npm global directory first
-mkdir -p ~/.npm-global
-npm config set prefix '~/.npm-global'
-
 # bashrc環境変数の設定
 cat >> ~/.bashrc << 'BASHRC_EOF'
 
