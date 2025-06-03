@@ -170,7 +170,8 @@ wait_for_cloud_init() {
     log "Waiting for cloud-init to complete..."
     
     # First try the standard --wait with shorter timeout (60 seconds)
-    if timeout 60 lxc exec $CONTAINER_NAME -- cloud-init status --wait 2>/dev/null; then
+    # Use -T to disable pseudo-TTY allocation to prevent hanging
+    if timeout 60 lxc exec -T $CONTAINER_NAME -- cloud-init status --wait 2>/dev/null; then
         success "Cloud-init completed successfully"
         return 0
     fi
@@ -181,7 +182,7 @@ wait_for_cloud_init() {
     local attempt=1
     
     while [ $attempt -le $max_attempts ]; do
-        if lxc exec $CONTAINER_NAME -- cloud-init status 2>/dev/null | grep -q "status: done"; then
+        if lxc exec -T $CONTAINER_NAME -- cloud-init status 2>/dev/null | grep -q "status: done"; then
             success "Cloud-init completed successfully (polling fallback, attempt $attempt)"
             return 0
         fi
@@ -243,11 +244,11 @@ create_container() {
     
     # Verify basic packages
     log "Verifying basic packages..."
-    if ! lxc exec $CONTAINER_NAME -- bash -c 'which ssh && which git && which python3'; then
+    if ! lxc exec -T $CONTAINER_NAME -- bash -c 'which ssh && which git && which python3'; then
         warning "Basic packages not ready. Waiting additional 10 seconds..."
         sleep 10
         # Try again
-        if ! lxc exec $CONTAINER_NAME -- bash -c 'which ssh && which git && which python3'; then
+        if ! lxc exec -T $CONTAINER_NAME -- bash -c 'which ssh && which git && which python3'; then
             error "Basic packages installation failed"
             return 1
         fi
@@ -255,7 +256,7 @@ create_container() {
     
     # Ensure claude_code user exists
     log "Ensuring claude_code user exists..."
-    lxc exec $CONTAINER_NAME -- bash -c '
+    lxc exec -T $CONTAINER_NAME -- bash -c '
         if ! id claude_code &>/dev/null; then
             useradd -m -s /bin/bash claude_code
             usermod -aG sudo claude_code
@@ -365,8 +366,8 @@ setup_additional_tools_script() {
     # Copy the additional tools script to container
     if [ -f "$BASE_DIR/scripts/setup-additional-tools.sh" ]; then
         lxc file push "$BASE_DIR/scripts/setup-additional-tools.sh" $CONTAINER_NAME/home/claude_code/setup-additional-tools.sh
-        lxc exec $CONTAINER_NAME -- chown claude_code:claude_code /home/claude_code/setup-additional-tools.sh
-        lxc exec $CONTAINER_NAME -- chmod +x /home/claude_code/setup-additional-tools.sh
+        lxc exec -T $CONTAINER_NAME -- chown claude_code:claude_code /home/claude_code/setup-additional-tools.sh
+        lxc exec -T $CONTAINER_NAME -- chmod +x /home/claude_code/setup-additional-tools.sh
         success "Additional tools script placed in container"
     else
         warning "Additional tools script not found at $BASE_DIR/scripts/setup-additional-tools.sh"
@@ -536,14 +537,14 @@ copy_claude_config() {
     
     if [ -d "$BASE_DIR/claude-config" ]; then
         # Create claude-config directory in container
-        lxc exec $CONTAINER_NAME -- sudo -u claude_code mkdir -p /home/claude_code/claude-config
+        lxc exec -T $CONTAINER_NAME -- sudo -u claude_code mkdir -p /home/claude_code/claude-config
         
         # Copy all files from claude-config directory
         for file in "$BASE_DIR/claude-config"/*; do
             if [ -f "$file" ]; then
                 filename=$(basename "$file")
                 lxc file push "$file" $CONTAINER_NAME/home/claude_code/claude-config/"$filename"
-                lxc exec $CONTAINER_NAME -- chown claude_code:claude_code /home/claude_code/claude-config/"$filename"
+                lxc exec -T $CONTAINER_NAME -- chown claude_code:claude_code /home/claude_code/claude-config/"$filename"
             fi
         done
         
