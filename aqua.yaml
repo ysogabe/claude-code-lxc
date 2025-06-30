@@ -1,0 +1,61 @@
+# aqua configuration for Claude Code LXC environment
+# Secure, declarative CLI tool management with checksum verification
+# See: https://aquaproj.github.io/
+
+registries:
+- type: standard
+  ref: v4.249.0  # Pinned version for reproducibility
+
+packages:
+# Version control and collaboration tools
+- name: cli/cli@v2.40.1                    # GitHub CLI
+- name: git-lfs/git-lfs@v3.4.1            # Git Large File Storage
+
+# Container and orchestration tools  
+- name: docker/cli@v24.0.7                # Docker CLI
+- name: docker/compose@v2.23.3            # Docker Compose
+- name: kubernetes/kubectl@v1.28.4        # Kubernetes CLI
+- name: helm/helm@v3.13.3                 # Helm package manager
+- name: k9scli/k9s@v0.28.2                # Kubernetes cluster management
+
+# Development and build tools
+- name: nodejs/corepack@v0.23.0           # Package manager manager for Node.js
+- name: mvdan/sh@v3.7.0                   # Shell parser and formatter (shfmt)
+- name: koalaman/shellcheck@v0.9.0        # Shell script static analysis
+- name: hadolint/hadolint@v2.12.0         # Dockerfile linter
+
+# API testing and monitoring
+- name: httpie/cli@3.2.2                  # HTTP client
+- name: curl/curl@curl-8_5_0              # Secure curl with latest security patches
+
+# JSON/YAML processing
+- name: jqlang/jq@jq-1.7.1               # JSON processor
+- name: mikefarah/yq@v4.40.5             # YAML processor
+
+# System monitoring and utilities  
+- name: sharkdp/bat@v0.24.0              # Cat with syntax highlighting
+- name: sharkdp/fd@v8.7.1                # Find alternative
+- name: BurntSushi/ripgrep@13.0.0        # Grep alternative
+- name: dandavison/delta@0.16.5          # Git diff viewer
+- name: eza-community/eza@v0.17.0        # ls alternative
+
+# Cloud and infrastructure tools
+- name: hashicorp/terraform@v1.6.6       # Infrastructure as Code
+- name: pulumi/pulumi@v3.98.0            # Modern Infrastructure as Code
+
+# Database tools
+- name: postgres/pgcli@v3.5.0            # PostgreSQL CLI with autocompletion
+- name: redis/redis@7.2.4                # Redis CLI
+
+# Security and compliance
+- name: aquasecurity/trivy@v0.48.3       # Container security scanner
+- name: anchore/syft@v0.97.1             # SBOM generation tool
+
+# Productivity tools
+- name: direnv/direnv@v2.32.3            # Environment variable manager
+- name: starship/starship@v1.16.0        # Shell prompt
+- name: zellij-org/zellij@v0.39.2        # Terminal multiplexer
+
+checksum:
+  enabled: true
+  require_checksum: true

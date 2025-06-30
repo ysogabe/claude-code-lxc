@@ -1,0 +1,106 @@
+# mise configuration for Claude Code LXC environment
+# See: https://mise.jdx.dev/configuration.html
+
+[tools]
+# Node.js LTS with npm and package managers
+node = "lts"                    # Latest LTS version
+
+# Python with development tools
+python = "3.11"                 # Stable version compatible with most packages
+
+# Rust stable toolchain
+rust = "stable"                 # Latest stable Rust
+
+# Additional development tools (when using mise as backend for aqua)
+# These will be managed by aqua for better security
+# "cli/cli" = "latest"          # GitHub CLI (managed by aqua)
+# "docker/cli" = "latest"       # Docker CLI (managed by aqua)
+
+[env]
+# Development environment variables
+NODE_ENV = "development"
+DOCKER_BUILDKIT = "1"
+COMPOSE_DOCKER_CLI_BUILD = "1"
+
+# Claude Code specific paths
+CLAUDE_CODE_WORKSPACE = "/home/claude_code/workspace"
+CLAUDE_CODE_PROJECTS = "/home/claude_code/projects"
+
+# Development debugging
+DEBUG = "microservices:*"
+LOG_LEVEL = "debug"
+
+# Python environment
+PYTHONPATH = "{{ env.CLAUDE_CODE_WORKSPACE }}/python:{{ env.CLAUDE_CODE_PROJECTS }}"
+
+# Rust environment
+RUST_BACKTRACE = "1"
+
+# npm configuration for security (as per Claude Code guidelines)
+npm_config_audit_level = "moderate"
+npm_config_fund = "false"
+npm_config_update_notifier = "false"
+
+[tasks.setup]
+description = "Setup development environment"
+run = [
+    "echo 'Setting up Claude Code development environment...'",
+    "node --version",
+    "python --version", 
+    "rustc --version",
+    "echo 'Installing Python development tools...'",
+    "pip install --upgrade pip pipenv poetry uv",
+    "echo 'Installing Node.js global packages...'",
+    "npm install -g yarn pnpm",
+    "echo 'Creating workspace directories...'",
+    "mkdir -p $CLAUDE_CODE_WORKSPACE/{python,rust,nodejs,docker}",
+    "mkdir -p $CLAUDE_CODE_PROJECTS",
+    "echo 'Development environment setup completed!'"
+]
+
+[tasks.verify]
+description = "Verify development environment"
+run = [
+    "echo '=== Development Environment Verification ==='",
+    "echo 'Node.js:' $(node --version)",
+    "echo 'npm:' $(npm --version)",
+    "echo 'Python:' $(python --version)",
+    "echo 'pip:' $(pip --version)",
+    "echo 'Rust:' $(rustc --version)",
+    "echo 'Cargo:' $(cargo --version)",
+    "echo 'Workspace: $CLAUDE_CODE_WORKSPACE'",
+    "echo 'Projects: $CLAUDE_CODE_PROJECTS'",
+    "echo '=== Verification completed ==='",
+]
+
+[tasks.clean]
+description = "Clean development environment"
+run = [
+    "echo 'Cleaning temporary files...'",
+    "find $CLAUDE_CODE_WORKSPACE -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true",
+    "find $CLAUDE_CODE_WORKSPACE -name 'node_modules' -type d -exec rm -rf {} + 2>/dev/null || true",
+    "find $CLAUDE_CODE_WORKSPACE -name 'target' -type d -exec rm -rf {} + 2>/dev/null || true",
+    "echo 'Clean completed!'"
+]
+
+[tasks.update]
+description = "Update all development tools"
+run = [
+    "echo 'Updating development tools...'",
+    "mise upgrade",
+    "pip install --upgrade pip pipenv poetry uv",
+    "npm update -g",
+    "rustup update",
+    "echo 'Update completed!'"
+]
+
+# IDE integration settings
+[settings]
+experimental = true
+legacy_version_file = true          # Support for .node-version, .python-version, etc.
+legacy_version_file_disable_tools = []
+
+# Plugin configuration
+[plugins]
+# Enable aqua backend for additional CLI tools
+# aqua = "https://github.com/mise-plugins/mise-aqua"
