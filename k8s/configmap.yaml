@@ -1,0 +1,79 @@
+# ConfigMap for Claude Code application configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: claude-code-app-config
+  namespace: claude-code-dev
+  labels:
+    app: claude-code-app
+    tier: application
+data:
+  NODE_ENV: "development"
+  LOG_LEVEL: "debug"
+  PORT: "3000"
+  DEBUG: "app:*,api:*"
+  
+  # Database configuration
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+  DB_NAME: "claude_dev"
+  DB_USER: "claude_code"
+  
+  # Redis configuration
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  
+  # Application settings
+  CORS_ORIGIN: "*"
+  SESSION_TIMEOUT: "3600"
+  MAX_UPLOAD_SIZE: "10mb"
+  
+---
+# Nginx configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: claude-code-dev
+  labels:
+    app: nginx
+    tier: proxy
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+    
+    http {
+        upstream claude_app_backend {
+            server claude-code-app-service:3000;
+        }
+        
+        server {
+            listen 80;
+            server_name localhost;
+            
+            # Health check
+            location /health {
+                access_log off;
+                proxy_pass http://claude_app_backend/health;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            }
+            
+            # Application
+            location / {
+                proxy_pass http://claude_app_backend;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                
+                # WebSocket support
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+            }
+        }
+    }

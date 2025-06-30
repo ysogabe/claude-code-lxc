@@ -1,0 +1,90 @@
+# aqua configuration for Claude Code LXC Application Development
+# Focus: Development, infrastructure management, and deployment automation tools
+# Secure, declarative CLI tool management with checksum verification
+# See: https://aquaproj.github.io/
+
+registries:
+- type: standard
+  ref: v4.249.0  # Pinned version for reproducibility
+
+packages:
+# === Development and Collaboration Tools ===
+- name: cli/cli@v2.40.1                    # GitHub CLI for repository management
+- name: git-lfs/git-lfs@v3.4.1            # Git Large File Storage for assets
+
+# === Infrastructure as Code (IaC) Tools ===
+- name: hashicorp/terraform@v1.6.6        # Infrastructure provisioning and management
+- name: ansible/ansible@v2.15.5           # Configuration management and deployment automation
+- name: pulumi/pulumi@v3.98.0            # Modern Infrastructure as Code with multiple languages
+
+# === Container and Orchestration Tools ===
+- name: docker/cli@v24.0.7                # Docker CLI for containerization
+- name: docker/compose@v2.23.3            # Docker Compose for multi-container applications
+- name: kubernetes/kubectl@v1.28.4        # Kubernetes CLI for container orchestration
+- name: helm/helm@v3.13.3                 # Kubernetes package manager
+- name: k9scli/k9s@v0.28.2                # Interactive Kubernetes cluster management
+
+# === Monitoring and Observability ===
+- name: prometheus/prometheus@v2.47.2     # Metrics collection and monitoring
+- name: grafana/grafana@v10.2.0          # Metrics visualization and dashboards
+- name: jaegertracing/jaeger@v1.51.0     # Distributed tracing
+- name: elastic/filebeat@v8.11.0         # Log shipping and aggregation
+
+# === CI/CD and Automation Tools ===
+- name: github/gh@v2.40.1                # GitHub CLI for CI/CD integration
+- name: golangci/golangci-lint@v1.55.2   # Go code linting (if using Go services)
+- name: hadolint/hadolint@v2.12.0         # Dockerfile linting
+- name: koalaman/shellcheck@v0.9.0        # Shell script static analysis
+
+# === Database and Storage Tools ===
+- name: postgres/pgcli@v3.5.0            # PostgreSQL CLI with autocompletion
+- name: redis/redis@7.2.4                # Redis CLI for caching and sessions
+- name: mongodb/mongosh@v2.1.1           # MongoDB shell for document databases
+
+# === API Development and Testing ===
+- name: httpie/cli@3.2.2                  # HTTP client for API testing
+- name: postman/newman@v6.0.0            # Postman collection runner
+- name: curl/curl@curl-8_5_0              # Secure curl with latest patches
+- name: grpc/grpc@v1.59.3                # gRPC tools for API communication
+
+# === Security and Compliance ===
+- name: aquasecurity/trivy@v0.48.3       # Container and infrastructure security scanning
+- name: anchore/syft@v0.97.1             # Software Bill of Materials (SBOM) generation
+- name: bridgecrewio/checkov@v3.1.34     # Infrastructure security scanning
+- name: ossf/scorecard@v4.13.1           # Security scorecard for dependencies
+
+# === Data Processing and Configuration ===
+- name: jqlang/jq@jq-1.7.1               # JSON processor for configuration management
+- name: mikefarah/yq@v4.40.5             # YAML processor for Kubernetes/Docker configs
+- name: mvdan/sh@v3.7.0                   # Shell parser and formatter (shfmt)
+
+# === Performance and Debugging Tools ===
+- name: sharkdp/bat@v0.24.0              # Enhanced cat with syntax highlighting
+- name: sharkdp/fd@v8.7.1                # Fast find alternative
+- name: BurntSushi/ripgrep@13.0.0        # Fast grep alternative for code search
+- name: dandavison/delta@0.16.5          # Enhanced git diff viewer
+- name: eza-community/eza@v0.17.0        # Modern ls alternative
+
+# === Development Environment Tools ===
+- name: direnv/direnv@v2.32.3            # Environment variable management
+- name: starship/starship@v1.16.0        # Cross-shell prompt for development info
+- name: zellij-org/zellij@v0.39.2        # Terminal multiplexer for session management
+
+# === Cloud Provider CLIs ===
+- name: aws/aws-cli@v2.15.0              # AWS CLI for cloud resources
+- name: azure/azure-cli@v2.55.0          # Azure CLI for Microsoft cloud
+- name: google/cloud-sdk@v455.0.0        # Google Cloud SDK
+
+# === Load Testing and Performance ===
+- name: grafana/k6@v0.47.0               # Load testing for applications
+- name: bombardier-dev/bombardier@v1.2.6 # HTTP benchmarking tool
+
+checksum:
+  enabled: true
+  require_checksum: true
+
+# Policy configuration for secure tool usage
+policy:
+  default: deny
+  policy_files:
+  - path: .aqua-policy.yaml

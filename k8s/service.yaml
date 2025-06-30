@@ -1,0 +1,105 @@
+# Services for Claude Code LXC application
+apiVersion: v1
+kind: Service
+metadata:
+  name: claude-code-app-service
+  namespace: claude-code-dev
+  labels:
+    app: claude-code-app
+    tier: application
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app: claude-code-app
+    tier: application
+    
+---
+# PostgreSQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: claude-code-dev
+  labels:
+    app: postgres
+    tier: database
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres
+  selector:
+    app: postgres
+    tier: database
+    
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: claude-code-dev
+  labels:
+    app: redis
+    tier: cache
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: redis
+  selector:
+    app: redis
+    tier: cache
+    
+---
+# Nginx Load Balancer Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+  namespace: claude-code-dev
+  labels:
+    app: nginx
+    tier: proxy
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: nginx
+    tier: proxy
+    
+---
+# Development NodePort service for external access
+apiVersion: v1
+kind: Service
+metadata:
+  name: claude-code-app-nodeport
+  namespace: claude-code-dev
+  labels:
+    app: claude-code-app
+    tier: application
+    service-type: development
+spec:
+  type: NodePort
+  ports:
+  - port: 3000
+    targetPort: 3000
+    nodePort: 30300
+    protocol: TCP
+    name: http
+  selector:
+    app: claude-code-app
+    tier: application
