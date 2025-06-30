@@ -1,97 +1,162 @@
-# mise configuration for Claude Code LXC environment
+# mise configuration for Claude Code LXC Application Development
+# Focus: Application development, building, testing, and deployment automation
 # See: https://mise.jdx.dev/configuration.html
 
 [tools]
-# Node.js LTS with npm and package managers
-node = "lts"                    # Latest LTS version
+# Core development runtimes
+node = "lts"                    # Node.js for web applications and tooling
+python = "3.11"                 # Python for scripting, ML, and backend services  
+rust = "stable"                 # Rust for performance-critical applications
 
-# Python with development tools
-python = "3.11"                 # Stable version compatible with most packages
-
-# Rust stable toolchain
-rust = "stable"                 # Latest stable Rust
-
-# Additional development tools (when using mise as backend for aqua)
-# These will be managed by aqua for better security
-# "cli/cli" = "latest"          # GitHub CLI (managed by aqua)
-# "docker/cli" = "latest"       # Docker CLI (managed by aqua)
+# Development tooling (managed via aqua for security)
+# CLI tools like docker, kubectl, terraform are managed by aqua.yaml
 
 [env]
-# Development environment variables
+# Build and deployment configuration
 NODE_ENV = "development"
 DOCKER_BUILDKIT = "1"
 COMPOSE_DOCKER_CLI_BUILD = "1"
+CI = "true"                     # Enable CI mode for consistent builds
 
-# Claude Code specific paths
+# Claude Code application paths
 CLAUDE_CODE_WORKSPACE = "/home/claude_code/workspace"
 CLAUDE_CODE_PROJECTS = "/home/claude_code/projects"
 
-# Development debugging
-DEBUG = "microservices:*"
+# Application debugging and monitoring
+DEBUG = "app:*,api:*,microservices:*"
 LOG_LEVEL = "debug"
+PORT = "3000"
 
-# Python environment
+# Python application environment
 PYTHONPATH = "{{ env.CLAUDE_CODE_WORKSPACE }}/python:{{ env.CLAUDE_CODE_PROJECTS }}"
+PYTHON_ENV = "development"
 
-# Rust environment
+# Rust development environment
 RUST_BACKTRACE = "1"
+RUST_LOG = "debug"
 
-# npm configuration for security (as per Claude Code guidelines)
+# npm security configuration (as per Claude Code guidelines)
 npm_config_audit_level = "moderate"
 npm_config_fund = "false"
 npm_config_update_notifier = "false"
 
+# Database connections (for development)
+DATABASE_URL = "postgresql://claude_code:dev@localhost:5432/claude_dev"
+REDIS_URL = "redis://localhost:6379"
+
+# Infrastructure automation
+TF_VAR_environment = "development"
+ANSIBLE_HOST_KEY_CHECKING = "False"
+
+# Application development and build tasks
 [tasks.setup]
-description = "Setup development environment"
+description = "Setup Claude Code application development environment"
 run = [
-    "echo 'Setting up Claude Code development environment...'",
-    "node --version",
-    "python --version", 
-    "rustc --version",
-    "echo 'Installing Python development tools...'",
-    "pip install --upgrade pip pipenv poetry uv",
-    "echo 'Installing Node.js global packages...'",
-    "npm install -g yarn pnpm",
-    "echo 'Creating workspace directories...'",
-    "mkdir -p $CLAUDE_CODE_WORKSPACE/{python,rust,nodejs,docker}",
-    "mkdir -p $CLAUDE_CODE_PROJECTS",
-    "echo 'Development environment setup completed!'"
+    "echo '🚀 Setting up Claude Code application development...'",
+    "echo 'Runtime versions:'",
+    "node --version && python --version && rustc --version",
+    "echo 'Installing Python application tools...'",
+    "pip install --upgrade pip poetry pytest black flake8 mypy",
+    "echo 'Installing Node.js application tools...'", 
+    "npm install -g @anthropic-ai/claude-code yarn pnpm nodemon",
+    "echo 'Setting up application directories...'",
+    "mkdir -p $CLAUDE_CODE_WORKSPACE/{web-apps,microservices,scripts,infrastructure}",
+    "mkdir -p $CLAUDE_CODE_PROJECTS/{frontend,backend,fullstack}",
+    "echo '✅ Application development environment ready!'"
 ]
 
-[tasks.verify]
-description = "Verify development environment"
+[tasks.build]
+description = "Build all applications in the current project"
 run = [
-    "echo '=== Development Environment Verification ==='",
-    "echo 'Node.js:' $(node --version)",
-    "echo 'npm:' $(npm --version)",
-    "echo 'Python:' $(python --version)",
-    "echo 'pip:' $(pip --version)",
-    "echo 'Rust:' $(rustc --version)",
-    "echo 'Cargo:' $(cargo --version)",
-    "echo 'Workspace: $CLAUDE_CODE_WORKSPACE'",
-    "echo 'Projects: $CLAUDE_CODE_PROJECTS'",
-    "echo '=== Verification completed ==='",
+    "echo '🔨 Building applications...'",
+    "if [ -f package.json ]; then npm run build; fi",
+    "if [ -f pyproject.toml ]; then poetry build; fi",
+    "if [ -f Cargo.toml ]; then cargo build --release; fi",
+    "if [ -f Dockerfile ]; then docker build -t $(basename $PWD):latest .; fi",
+    "echo '✅ Build completed!'"
+]
+
+[tasks.test]
+description = "Run tests for all applications"
+run = [
+    "echo '🧪 Running application tests...'",
+    "if [ -f package.json ]; then npm test; fi",
+    "if [ -f pyproject.toml ]; then poetry run pytest; fi",
+    "if [ -f Cargo.toml ]; then cargo test; fi",
+    "echo '✅ All tests completed!'"
+]
+
+[tasks.lint]
+description = "Lint and format all application code"
+run = [
+    "echo '🔍 Linting application code...'",
+    "if [ -f package.json ]; then npm run lint || npx eslint . --fix; fi",
+    "if [ -f pyproject.toml ]; then black . && flake8 .; fi",
+    "if [ -f Cargo.toml ]; then cargo fmt && cargo clippy; fi",
+    "echo '✅ Code linting completed!'"
+]
+
+[tasks.dev]
+description = "Start development servers for applications"
+run = [
+    "echo '🌟 Starting development servers...'",
+    "if [ -f package.json ]; then npm run dev || npm start; fi",
+    "if [ -f pyproject.toml ]; then poetry run python -m uvicorn main:app --reload; fi",
+    "if [ -f Cargo.toml ]; then cargo run; fi"
+]
+
+[tasks.deploy]
+description = "Deploy applications using infrastructure automation"
+run = [
+    "echo '🚀 Deploying applications...'",
+    "echo 'Building for production...'",
+    "mise run build",
+    "echo 'Running infrastructure deployment...'",
+    "if [ -d terraform/ ]; then cd terraform && terraform apply -auto-approve; fi",
+    "if [ -f docker-compose.yml ]; then docker-compose up -d; fi",
+    "if [ -d k8s/ ]; then kubectl apply -f k8s/; fi",
+    "echo '✅ Deployment completed!'"
+]
+
+[tasks.infra-plan]
+description = "Plan infrastructure changes"
+run = [
+    "echo '📋 Planning infrastructure changes...'",
+    "if [ -d terraform/ ]; then cd terraform && terraform plan; fi",
+    "if [ -f ansible-playbook.yml ]; then ansible-playbook --check ansible-playbook.yml; fi"
+]
+
+[tasks.logs]
+description = "Show application and infrastructure logs"
+run = [
+    "echo '📄 Showing logs...'",
+    "if [ -f docker-compose.yml ]; then docker-compose logs -f; fi",
+    "if command -v kubectl &> /dev/null; then kubectl logs -f deployment/claude-code-app; fi"
 ]
 
 [tasks.clean]
-description = "Clean development environment"
+description = "Clean application build artifacts"
 run = [
-    "echo 'Cleaning temporary files...'",
+    "echo '🧹 Cleaning build artifacts...'",
     "find $CLAUDE_CODE_WORKSPACE -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true",
     "find $CLAUDE_CODE_WORKSPACE -name 'node_modules' -type d -exec rm -rf {} + 2>/dev/null || true",
     "find $CLAUDE_CODE_WORKSPACE -name 'target' -type d -exec rm -rf {} + 2>/dev/null || true",
-    "echo 'Clean completed!'"
+    "find $CLAUDE_CODE_WORKSPACE -name 'dist' -type d -exec rm -rf {} + 2>/dev/null || true",
+    "docker system prune -f",
+    "echo '✅ Cleanup completed!'"
 ]
 
-[tasks.update]
-description = "Update all development tools"
+[tasks.status]
+description = "Show application and infrastructure status"
 run = [
-    "echo 'Updating development tools...'",
-    "mise upgrade",
-    "pip install --upgrade pip pipenv poetry uv",
-    "npm update -g",
-    "rustup update",
-    "echo 'Update completed!'"
+    "echo '📊 Application and Infrastructure Status'",
+    "echo '=== Runtime Versions ==='",
+    "node --version && python --version && rustc --version",
+    "echo '=== Docker Containers ==='", 
+    "docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'",
+    "echo '=== Infrastructure ==='",
+    "if [ -d terraform/ ]; then cd terraform && terraform show | head -10; fi",
+    "if command -v kubectl &> /dev/null; then kubectl get pods,svc; fi"
 ]
 
 # IDE integration settings

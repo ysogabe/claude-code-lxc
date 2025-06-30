@@ -1,0 +1,312 @@
+# Docker Compose for Claude Code LXC Application Development
+# Optimized for development within LXC container environment
+
+version: '3.8'
+
+services:
+  # === Application Services ===
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    image: claude-code-app:dev
+    container_name: claude-code-app-dev
+    
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_URL=postgresql://claude_code:dev_password@postgres:5432/claude_dev
+      - REDIS_URL=redis://redis:6379
+      - LOG_LEVEL=debug
+      - HOT_RELOAD=true
+      
+    ports:
+      - "3000:3000"
+      - "9229:9229"  # Node.js debugger port
+      
+    volumes:
+      # Hot reload for development
+      - .:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+      
+    depends_on:
+      - postgres
+      - redis
+      
+    networks:
+      - app-network
+      - db-network
+      
+    restart: unless-stopped
+    
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`localhost`)"
+      - "traefik.http.services.app.loadbalancer.server.port=3000"
+
+  # === Database Services ===
+  postgres:
+    image: postgres:15-alpine
+    container_name: claude-code-postgres-dev
+    
+    environment:
+      - POSTGRES_DB=claude_dev
+      - POSTGRES_USER=claude_code
+      - POSTGRES_PASSWORD=dev_password
+      - POSTGRES_INITDB_ARGS=--encoding=UTF8 --lc-collate=C --lc-ctype=C
+      
+    ports:
+      - "5432:5432"
+      
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+      - ./database/backups:/backups
+      
+    networks:
+      - db-network
+      
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U claude_code -d claude_dev"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: claude-code-redis-dev
+    
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    
+    ports:
+      - "6379:6379"
+      
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/etc/redis/redis.conf
+      
+    networks:
+      - db-network
+      
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # === Development Tools ===
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: claude-code-pgadmin-dev
+    
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=dev@claude-code.local
+      - PGADMIN_DEFAULT_PASSWORD=dev_password
+      - PGADMIN_DISABLE_POSTFIX=true
+      
+    ports:
+      - "5050:80"
+      
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      
+    depends_on:
+      - postgres
+      
+    networks:
+      - db-network
+      
+    restart: unless-stopped
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: claude-code-redis-commander-dev
+    
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+      
+    ports:
+      - "8081:8081"
+      
+    depends_on:
+      - redis
+      
+    networks:
+      - db-network
+      
+    restart: unless-stopped
+
+  # === Monitoring and Observability ===
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: claude-code-prometheus-dev
+    
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      
+    ports:
+      - "9090:9090"
+      
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+      
+    networks:
+      - app-network
+      
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: claude-code-grafana-dev
+    
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=dev_password
+      - GF_USERS_ALLOW_SIGN_UP=false
+      
+    ports:
+      - "3001:3000"
+      
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      
+    depends_on:
+      - prometheus
+      
+    networks:
+      - app-network
+      
+    restart: unless-stopped
+
+  # === Load Balancer ===
+  nginx:
+    image: nginx:alpine
+    container_name: claude-code-nginx-dev
+    
+    ports:
+      - "8080:80"
+      
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/static:/var/www/static:ro
+      - ./logs/nginx:/var/log/nginx
+      
+    depends_on:
+      - app
+      
+    networks:
+      - app-network
+      
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # === Testing Services ===
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: claude-code-mailhog-dev
+    
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+      
+    networks:
+      - app-network
+      
+    restart: unless-stopped
+
+  # === Background Services ===
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    image: claude-code-app:dev
+    container_name: claude-code-worker-dev
+    
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://claude_code:dev_password@postgres:5432/claude_dev
+      - REDIS_URL=redis://redis:6379
+      - LOG_LEVEL=debug
+      - WORKER_MODE=true
+      
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+      
+    depends_on:
+      - postgres
+      - redis
+      
+    networks:
+      - app-network
+      - db-network
+      
+    restart: unless-stopped
+    
+    command: ["npm", "run", "worker"]
+
+# === Networks ===
+networks:
+  app-network:
+    driver: bridge
+    labels:
+      - "environment=development"
+      - "tier=application"
+      
+  db-network:
+    driver: bridge
+    internal: true
+    labels:
+      - "environment=development"
+      - "tier=database"
+
+# === Volumes ===
+volumes:
+  postgres_data:
+    driver: local
+    labels:
+      - "environment=development"
+      - "service=database"
+      
+  redis_data:
+    driver: local
+    labels:
+      - "environment=development"
+      - "service=cache"
+      
+  pgadmin_data:
+    driver: local
+    labels:
+      - "environment=development"
+      - "service=admin-tools"
+      
+  prometheus_data:
+    driver: local
+    labels:
+      - "environment=development"
+      - "service=monitoring"
+      
+  grafana_data:
+    driver: local
+    labels:
+      - "environment=development"
+      - "service=monitoring"

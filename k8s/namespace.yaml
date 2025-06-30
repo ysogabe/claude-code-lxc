@@ -1,0 +1,45 @@
+# Kubernetes namespace for Claude Code LXC applications
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: claude-code-dev
+  labels:
+    name: claude-code-dev
+    environment: development
+    managed-by: claude-code-lxc
+    
+---
+# Resource quotas for development namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: claude-code-dev-quota
+  namespace: claude-code-dev
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: 8Gi
+    limits.cpu: "8"
+    limits.memory: 16Gi
+    pods: "20"
+    persistentvolumeclaims: "10"
+    services: "10"
+    secrets: "20"
+    configmaps: "20"
+    
+---
+# Limit ranges for pods
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: claude-code-dev-limits
+  namespace: claude-code-dev
+spec:
+  limits:
+  - default:
+      cpu: "1"
+      memory: "1Gi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "256Mi"
+    type: Container

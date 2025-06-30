@@ -1,0 +1,69 @@
+# Persistent Volume Claims for Claude Code application storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: claude-code-dev
+  labels:
+    app: postgres
+    tier: database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard  # Adjust based on your cluster's storage class
+  
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: claude-code-dev
+  labels:
+    app: redis
+    tier: cache
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: standard
+  
+---
+# Shared storage for application logs and uploads
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app-storage-pvc
+  namespace: claude-code-dev
+  labels:
+    app: claude-code-app
+    tier: application
+spec:
+  accessModes:
+    - ReadWriteMany  # Allows multiple pods to mount the same volume
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: standard
+  
+---
+# Backup storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backup-pvc
+  namespace: claude-code-dev
+  labels:
+    app: claude-code-app
+    tier: backup
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: standard
